@@ -10,6 +10,7 @@ target_compile_features(GameplayStrandsFrontend
 
 target_link_libraries(GameplayStrandsFrontend
         PUBLIC GameplayStrands::Model
+        PUBLIC GameplayStrands::LLVMSupport
 )
 
 set_target_properties(GameplayStrandsFrontend PROPERTIES
@@ -24,8 +25,34 @@ target_sources(GameplayStrandsFrontend
         FILES "${GameplayStrandsSDK_SOURCE_DIR}/include/GameplayStrands/Frontend/Frontend.h"
 )
 
-install(TARGETS GameplayStrandsFrontend
-        EXPORT GameplayStrandsTargets
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+if (GAMEPLAYSTRANDS_ENABLE_INSTALL)
+    install(TARGETS GameplayStrandsFrontend
+            EXPORT GameplayStrandsTargets
+            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    )
+endif ()
+
+set(LLVM_TARGET_DEFINITIONS Tokens.td)
+
+tablegen(LLVM TokenKinds.inc
+        -print-enums
+        -class=TokenKind
+        EXTRA_INCLUDES ${GAMEPLAYSTRANDS_LLVM_INCLUDE_DIRS}
+)
+
+add_custom_target(GameplayStrandsFrontendTableGen
+        DEPENDS ${TABLEGEN_OUTPUT}
+)
+
+add_dependencies(GameplayStrandsFrontend
+        GameplayStrandsFrontendTableGen
+)
+
+target_sources(GameplayStrandsFrontend
+        PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/TokenKinds.inc"
+)
+
+target_include_directories(GameplayStrandsFrontend
+        PRIVATE "${CMAKE_CURRENT_BINARY_DIR}"
 )

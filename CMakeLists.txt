@@ -18,42 +18,28 @@ option(GAMEPLAYSTRANDS_BUILD_COMPILER
         ${PROJECT_IS_TOP_LEVEL}
 )
 
+option(GAMEPLAYSTRANDS_ENABLE_INSTALL
+        "Generate SDK installation and package rules"
+        ${PROJECT_IS_TOP_LEVEL}
+)
+
+set(GAMEPLAYSTRANDS_LLVM_VERSION "23.1.1")
+
+if(NOT TARGET LLVMSupport)
+    find_package(LLVM ${GAMEPLAYSTRANDS_LLVM_VERSION}
+            EXACT REQUIRED CONFIG
+    )
+endif()
+
+include(cmake/GameplayStrandsLLVM.cmake)
+include(cmake/GameplayStrandsTableGen.cmake)
+
 add_subdirectory(lib)
 
 if(GAMEPLAYSTRANDS_BUILD_COMPILER)
     add_subdirectory(tools)
 endif()
 
-# Keep all package files together, relative to the installation prefix.
-set(GAMEPLAYSTRANDS_INSTALL_CMAKEDIR
-    "${CMAKE_INSTALL_LIBDIR}/cmake/GameplayStrands"
-)
-
-install(EXPORT GameplayStrandsTargets
-    FILE GameplayStrandsTargets.cmake
-    NAMESPACE GameplayStrands::
-    DESTINATION "${GAMEPLAYSTRANDS_INSTALL_CMAKEDIR}"
-)
-
-configure_package_config_file(
-    cmake/GameplayStrandsConfig.cmake.in
-    "${CMAKE_CURRENT_BINARY_DIR}/GameplayStrandsConfig.cmake"
-    INSTALL_DESTINATION "${GAMEPLAYSTRANDS_INSTALL_CMAKEDIR}"
-)
-
-# The initial SDK does not yet promise compatibility between releases.
-write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/GameplayStrandsConfigVersion.cmake"
-    VERSION "${PROJECT_VERSION}"
-    COMPATIBILITY ExactVersion
-)
-
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/GameplayStrandsConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/GameplayStrandsConfigVersion.cmake"
-    DESTINATION "${GAMEPLAYSTRANDS_INSTALL_CMAKEDIR}"
-)
-
-install(FILES LICENSE
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/GameplayStrands"
-)
+if(GAMEPLAYSTRANDS_ENABLE_INSTALL)
+    include(cmake/GameplayStrandsInstall.cmake)
+endif()

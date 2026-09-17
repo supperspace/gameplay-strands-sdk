@@ -1,5 +1,9 @@
 @PACKAGE_INIT@
 
+include(CMakeFindDependencyMacro)
+find_dependency(LLVM @GAMEPLAYSTRANDS_LLVM_VERSION@ EXACT CONFIG)
+
+include("${CMAKE_CURRENT_LIST_DIR}/GameplayStrandsLLVM.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/GameplayStrandsTargets.cmake")
 
 check_required_components(GameplayStrands)

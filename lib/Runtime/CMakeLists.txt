@@ -24,8 +24,12 @@ target_sources(GameplayStrandsRuntime
         FILES "${GameplayStrandsSDK_SOURCE_DIR}/include/GameplayStrands/Runtime/Runtime.h"
 )
 
-install(TARGETS GameplayStrandsRuntime
-        EXPORT GameplayStrandsTargets
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-)
+if (GAMEPLAYSTRANDS_ENABLE_INSTALL)
+
+    install(TARGETS GameplayStrandsRuntime
+            EXPORT GameplayStrandsTargets
+            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    )
+
+endif ()

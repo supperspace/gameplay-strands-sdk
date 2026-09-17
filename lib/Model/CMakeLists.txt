@@ -21,8 +21,17 @@ target_sources(GameplayStrandsModel
         FILES "${GameplayStrandsSDK_SOURCE_DIR}/include/GameplayStrands/Model/Model.h"
 )
 
-install(TARGETS GameplayStrandsModel
-        EXPORT GameplayStrandsTargets
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+
+if (GAMEPLAYSTRANDS_ENABLE_INSTALL)
+
+    install(TARGETS GameplayStrandsModel
+            EXPORT GameplayStrandsTargets
+            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    )
+endif ()
+
+
+target_link_libraries(GameplayStrandsModel
+        PUBLIC GameplayStrands::LLVMSupport
 )
