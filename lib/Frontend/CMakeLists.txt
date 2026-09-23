@@ -1,6 +1,14 @@
-﻿add_library(GameplayStrandsFrontend STATIC
-        Frontend.cpp
+﻿file(GLOB_RECURSE frontend_sources
+        CONFIGURE_DEPENDS
+        LIST_DIRECTORIES false
+        "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
 )
+
+add_library(GameplayStrandsFrontend STATIC
+        ${frontend_sources}
+)
+
+llvm_update_compile_flags(GameplayStrandsFrontend)
 
 add_library(GameplayStrands::Frontend ALIAS GameplayStrandsFrontend)
 
@@ -18,11 +26,17 @@ set_target_properties(GameplayStrandsFrontend PROPERTIES
         POSITION_INDEPENDENT_CODE ON
 )
 
+file(GLOB_RECURSE frontend_public_headers
+        CONFIGURE_DEPENDS
+        LIST_DIRECTORIES false
+        "${GameplayStrandsSDK_SOURCE_DIR}/include/GameplayStrands/Frontend/*.h"
+)
+
 target_sources(GameplayStrandsFrontend
         PUBLIC
         FILE_SET HEADERS
         BASE_DIRS "${GameplayStrandsSDK_SOURCE_DIR}/include"
-        FILES "${GameplayStrandsSDK_SOURCE_DIR}/include/GameplayStrands/Frontend/Frontend.h"
+        FILES ${frontend_public_headers}
 )
 
 if (GAMEPLAYSTRANDS_ENABLE_INSTALL)
@@ -54,5 +68,5 @@ target_sources(GameplayStrandsFrontend
 )
 
 target_include_directories(GameplayStrandsFrontend
-        PRIVATE "${CMAKE_CURRENT_BINARY_DIR}"
+        PUBLIC "${CMAKE_CURRENT_BINARY_DIR}"
 )

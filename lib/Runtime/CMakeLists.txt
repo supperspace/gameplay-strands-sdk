@@ -21,7 +21,7 @@ target_sources(GameplayStrandsRuntime
         PUBLIC
         FILE_SET HEADERS
         BASE_DIRS "${GameplayStrandsSDK_SOURCE_DIR}/include"
-        FILES "${GameplayStrandsSDK_SOURCE_DIR}/include/GameplayStrands/Runtime/Runtime.h"
+        FILES "${GameplayStrandsSDK_SOURCE_DIR}/include/gstrands/Runtime/Runtime.h"
 )
 
 if (GAMEPLAYSTRANDS_ENABLE_INSTALL)

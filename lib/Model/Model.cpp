@@ -1,1 +1,1 @@
-#include <GameplayStrands/Model/Model.h>
+#include <gstrands/Model/Model.h>

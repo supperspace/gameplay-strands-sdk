@@ -1,6 +1,7 @@
 ﻿add_library(GameplayStrandsModel STATIC
         Model.cpp
 )
+llvm_update_compile_flags(GameplayStrandsModel)
 
 add_library(GameplayStrands::Model ALIAS GameplayStrandsModel)
 
@@ -18,7 +19,7 @@ target_sources(GameplayStrandsModel
         PUBLIC
         FILE_SET HEADERS
         BASE_DIRS "${GameplayStrandsSDK_SOURCE_DIR}/include"
-        FILES "${GameplayStrandsSDK_SOURCE_DIR}/include/GameplayStrands/Model/Model.h"
+        FILES "${GameplayStrandsSDK_SOURCE_DIR}/include/gstrands/Model/Model.h"
 )
 
 

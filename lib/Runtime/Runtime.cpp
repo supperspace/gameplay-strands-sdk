@@ -1,1 +1,1 @@
-#include <GameplayStrands/Runtime/Runtime.h>
+#include <gstrands/Runtime/Runtime.h>

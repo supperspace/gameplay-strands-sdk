@@ -1,1 +1,1 @@
-#include <GameplayStrands/Frontend/Frontend.h>
+#include <gstrands/Frontend/Frontend.h>

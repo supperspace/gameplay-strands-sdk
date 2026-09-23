@@ -1,5 +1,6 @@
 ﻿add_executable(GameplayStrandsCompiler
     Compiler.cpp)
+llvm_update_compile_flags(GameplayStrandsCompiler)
 
 add_executable(GameplayStrands::Compiler ALIAS GameplayStrandsCompiler)
 
