@@ -14,13 +14,13 @@ namespace gstrands {
       , SourceRange(Range)
       , Spelling(Ident.getSpelling()) {}
 
-    Token(const TokenKind Kind, const SourceRange Range)
+    Token(const tok::TokenKind Kind, const SourceRange Range)
       : Kind(Kind)
       , SourceRange(Range) {}
 
     Token() = default;
 
-    TokenKind Kind = TokenKind::InvalidToken;
+    tok::TokenKind Kind = tok::Invalid;
     Identifier Ident;
 
     /// The full range this token is defined at

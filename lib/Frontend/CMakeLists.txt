@@ -29,7 +29,7 @@ set_target_properties(GameplayStrandsFrontend PROPERTIES
 file(GLOB_RECURSE frontend_public_headers
         CONFIGURE_DEPENDS
         LIST_DIRECTORIES false
-        "${GameplayStrandsSDK_SOURCE_DIR}/include/GameplayStrands/Frontend/*.h"
+        "${GameplayStrandsSDK_SOURCE_DIR}/include/gstrands/Frontend/*.h"
 )
 
 target_sources(GameplayStrandsFrontend
@@ -50,8 +50,7 @@ endif ()
 set(LLVM_TARGET_DEFINITIONS Tokens.td)
 
 tablegen(LLVM TokenKinds.inc
-        -print-enums
-        -class=TokenKind
+        -gen-searchable-tables
         EXTRA_INCLUDES ${GAMEPLAYSTRANDS_LLVM_INCLUDE_DIRS}
 )
 

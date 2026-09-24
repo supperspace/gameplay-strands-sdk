@@ -27,7 +27,7 @@ int main(const int Argc, const char *Argv[]) {
     return 1;
   }
 
-  auto CompilerInvocation = std::move(ExpectedCompilerInvocation.get());
+  ExpectedCompilerInvocation.get()->compile();
 
   return 0;
 }

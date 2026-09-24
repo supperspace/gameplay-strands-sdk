@@ -9,8 +9,9 @@
 namespace gstrands {
 
 class IdentifierInfo {
+  friend class IdentifierTable;
 public:
-  TokenKind K = TokenKind::Identifier;
+  tok::TokenKind K = tok::Identifier;
 
   llvm::StringMapEntry<IdentifierInfo *> *Entry = nullptr;
 };
@@ -24,8 +25,8 @@ public:
     return Info->Entry->first();
   }
 
-  TokenKind getTokenKind() const {
-    return Info ? Info->K : TokenKind::InvalidToken;
+  tok::TokenKind getTokenKind() const {
+    return Info ? Info->K : tok::Invalid;
   }
 
   friend bool operator==(Identifier Lhs, Identifier Rhs) {
@@ -36,8 +37,8 @@ public:
 
 private:
   friend class IdentifierTable;
-  explicit Identifier(const IdentifierInfo &Info) : Info(&Info) {}
-  const IdentifierInfo *Info = nullptr;
+  explicit Identifier(IdentifierInfo &Info) : Info(&Info) {}
+  IdentifierInfo *Info = nullptr;
 };
 
 class IdentifierTable {
@@ -46,7 +47,10 @@ class IdentifierTable {
   HashTableTy HashTable;
 
 public:
-  explicit IdentifierTable(llvm::BumpPtrAllocator &Alloc) : HashTable(Alloc) {}
+  explicit IdentifierTable(llvm::BumpPtrAllocator &Alloc) : HashTable(Alloc) {
+    addKeywords();
+  }
+
   IdentifierTable(const IdentifierTable &Table) = delete;
   IdentifierTable &operator=(const IdentifierTable &Table) = delete;
 

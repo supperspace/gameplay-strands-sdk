@@ -1,7 +1,11 @@
+include "llvm/TableGen/SearchableTable.td"
+
+
 // Fixed spellings are complete lexemes. Empty means variable spelling
 // or a synthetic token. Comments are retained as trivia.
 class TokenKind<string spelling = ""> {
   string Spelling = spelling;
+  TokenKind Kind = !cast<TokenKind>(NAME);
   bit IsKeyword = 0;
   bit IsTrivia = 0;
 }
@@ -143,3 +147,29 @@ def Colon      : Punctuator<":">;
 def Semicolon  : Punctuator<";">;
 def Comma      : Punctuator<",">;
 def At         : Punctuator<"@">;
+
+def TokenKind: GenericEnum {
+    let FilterClass = "TokenKind";
+    let UnderlyingType = "uint16_t";
+}
+
+def TokenTable: GenericTable {
+    let FilterClass = "TokenKind";
+    let CppTypeName = "TokenInfo";
+
+    let Fields = ["Kind", "Spelling", "IsKeyword", "IsTrivia"];
+
+    string TypeOf_Kind = "TokenKind";
+
+    let PrimaryKey = ["Kind"];
+    let PrimaryKeyName = "lookupToken";
+}
+
+def KeywordTable: GenericTable {
+    let FilterClass = "Keyword";
+    let CppTypeName = "KeywordInfo";
+
+    let Fields = ["Kind"];
+
+    string TypeOf_Kind = "TokenKind";
+}
