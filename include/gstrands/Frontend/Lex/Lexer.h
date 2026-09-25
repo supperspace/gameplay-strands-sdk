@@ -23,6 +23,8 @@ private:
   llvm::StringRef::value_type getNextChar();
   llvm::StringRef::value_type peekNextChar() const;
 
+  void advance(size_t N = 1);
+
   void skipWhitespace();
 
   bool conditionalAdvance(llvm::StringRef Match);
@@ -33,7 +35,7 @@ private:
   SourceLocation getCurrentSourceLoc() const;
 
   Token lexIdentifier();
-  Token lexNumericLiteral();
+  std::optional<Token> lexNumericLiteral();
 };
 
 } // namespace gstrands

@@ -2,6 +2,8 @@
 #include "gstrands/Frontend/Basic/IdentifierTable.h"
 #include "gstrands/Frontend/Basic/SourceLocation.h"
 
+#include "llvm/Support/Compiler.h"
+
 #include "TokenDefs.h"
 
 namespace gstrands {
@@ -27,6 +29,9 @@ namespace gstrands {
     SourceRange SourceRange;
     
     llvm::StringRef Spelling;
+
+    LLVM_PREFERRED_TYPE(bool);
+    uint32_t IsMalformed: 1 = false;
   };
   
 }// namespace gstrands
