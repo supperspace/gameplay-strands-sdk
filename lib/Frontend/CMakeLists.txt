@@ -47,9 +47,16 @@ if (GAMEPLAYSTRANDS_ENABLE_INSTALL)
     )
 endif ()
 
-set(LLVM_TARGET_DEFINITIONS Tokens.td)
+set(LLVM_TARGET_DEFINITIONS TableGen/Tokens.td)
 
 tablegen(LLVM TokenKinds.inc
+        -gen-searchable-tables
+        EXTRA_INCLUDES ${GAMEPLAYSTRANDS_LLVM_INCLUDE_DIRS}
+)
+
+set(LLVM_TARGET_DEFINITIONS TableGen/Diagnostics.td)
+
+tablegen(LLVM DiagnosticDefs.inc
         -gen-searchable-tables
         EXTRA_INCLUDES ${GAMEPLAYSTRANDS_LLVM_INCLUDE_DIRS}
 )

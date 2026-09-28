@@ -12,14 +12,16 @@
 #include <utility>
 
 namespace gstrands {
+class DiagnosticsSink;
+class DiagnosticsEngine;
 class ProjectDefinition;
 
-struct CompilationResult {
-
-};
+struct CompilationResult {};
 
 class CompilerInvocation {
 public:
+  ~CompilerInvocation();
+
   static llvm::Expected<std::unique_ptr<CompilerInvocation>>
   createFromProjectDefinition(const ProjectDefinition &ProjectDef);
 
@@ -28,7 +30,8 @@ private:
   template <std::ranges::input_range R>
     requires std::convertible_to<std::ranges::range_reference_t<R>,
                                  llvm::StringRef>
-  explicit CompilerInvocation(R &&InputSources) {
+  explicit CompilerInvocation(R &&InputSources)
+      : CompilerInvocation() {
     if constexpr (std::ranges::sized_range<R>)
       SourceFiles.reserve(std::ranges::size(InputSources));
 
@@ -40,11 +43,16 @@ private:
     }
   }
 
+  CompilerInvocation();
+
   llvm::SmallVector<llvm::SmallString<256>, 64> SourceFiles;
 
   llvm::BumpPtrAllocator Allocator;
-  IdentifierTable Identifiers{Allocator};
-  SourceManager SM;
+
+  std::unique_ptr<IdentifierTable> Identifiers;
+  std::unique_ptr<SourceManager> SM;
+  std::unique_ptr<DiagnosticsSink> DiagSink;
+  std::unique_ptr<DiagnosticsEngine> DiagEngine;
 };
 
 } // namespace gstrands

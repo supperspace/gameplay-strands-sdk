@@ -1,5 +1,7 @@
 #include "gstrands/Frontend/CompilerInvocation.h"
 
+#include "gstrands/Frontend/Basic/ConsoleOutputDiagSink.h"
+#include "gstrands/Frontend/Basic/Diagnostics.h"
 #include "gstrands/Frontend/Lex/Lexer.h"
 #include "gstrands/Frontend/Parse/Parser.h"
 #include "gstrands/Frontend/ProjectDefinition.h"
@@ -10,6 +12,14 @@
 #include <set>
 
 namespace gstrands {
+
+CompilerInvocation::CompilerInvocation()
+    : Identifiers(std::make_unique<IdentifierTable>(Allocator)),
+      SM(std::make_unique<SourceManager>()),
+      DiagSink(std::make_unique<ConsoleOutputDiagSink>(*SM)),
+      DiagEngine(std::make_unique<DiagnosticsEngine>(*DiagSink)) {}
+
+CompilerInvocation::~CompilerInvocation() = default;
 
 llvm::Expected<std::unique_ptr<CompilerInvocation>>
 CompilerInvocation::createFromProjectDefinition(
@@ -63,18 +73,19 @@ CompilerInvocation::createFromProjectDefinition(
 CompilationResult CompilerInvocation::compile() {
   for (llvm::StringRef Source : SourceFiles) {
 
-    auto SourceBuffer = SM.getOrLoadBuffer(Source);
+    auto SourceBuffer = SM->getOrLoadBuffer(Source);
     if (SourceBuffer.takeError()) {
       return {}; // This would be a fatal error
     }
 
-    Lexer Lex{SourceBuffer.get(), Identifiers};
-    Parser Parse{Lex};
+    Lexer Lex{SourceBuffer.get(), *Identifiers};
+    Parser Parse{Lex, *DiagEngine};
 
     Parse.parse();
   }
 
   return {};
 }
+
 
 } // namespace gstrands
