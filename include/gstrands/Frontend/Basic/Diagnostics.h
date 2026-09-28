@@ -17,7 +17,7 @@ using namespace llvm;
 #define GET_DiagnosticId_DECL
 #define GET_DiagnosticClass_DECL
 #define GET_DiagnosticSeverity_DECL
-#include "DiagnosticDefs.inc"
+#include "gstrands/Frontend/Basic/DiagnosticDefs.inc"
 
 struct DiagnosticInfo {
   DiagnosticId ID;
@@ -27,7 +27,7 @@ struct DiagnosticInfo {
 };
 
 #define GET_DiagnosticsTable_DECL
-#include "DiagnosticDefs.inc"
+#include "gstrands/Frontend/Basic/DiagnosticDefs.inc"
 
 } // namespace diag
 

@@ -44,6 +44,8 @@ private:
 
   void parseQualifiedName();
 
+  void skipUntil(tok::TokenKind K);
+
   TokenStream Tokens;
   DiagnosticsEngine &Diag;
 };

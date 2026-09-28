@@ -5,7 +5,7 @@ namespace gstrands::tok {
 
 #define GET_KeywordTable_IMPL
 #define GET_TokenTable_IMPL
-#include "TokenKinds.inc"
+#include "gstrands/Frontend/Lex/TokenKinds.inc"
 
 ArrayRef<KeywordInfo> getKeywords() {
   return KeywordTable;

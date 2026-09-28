@@ -25,21 +25,35 @@ option(GAMEPLAYSTRANDS_ENABLE_INSTALL
 
 set(GAMEPLAYSTRANDS_LLVM_VERSION "23.1.1")
 
-if(NOT TARGET LLVMSupport)
+if (NOT TARGET LLVMSupport)
     find_package(LLVM ${GAMEPLAYSTRANDS_LLVM_VERSION}
             EXACT REQUIRED CONFIG
     )
-endif()
+endif ()
+
+set(GAMEPLAYSTRANDS_TABLEGEN_INCLUDE_DIRS
+        "${GameplayStrandsSDK_SOURCE_DIR}/include"
+        ${GAMEPLAYSTRANDS_LLVM_INCLUDE_DIRS}
+)
 
 include(cmake/GameplayStrandsLLVM.cmake)
 include(cmake/GameplayStrandsTableGen.cmake)
 
+add_subdirectory(utils/TableGen)
 add_subdirectory(lib)
+add_subdirectory(include)
 
-if(GAMEPLAYSTRANDS_BUILD_COMPILER)
+if (GAMEPLAYSTRANDS_BUILD_COMPILER)
     add_subdirectory(tools)
-endif()
+endif ()
 
-if(GAMEPLAYSTRANDS_ENABLE_INSTALL)
+if (GAMEPLAYSTRANDS_ENABLE_INSTALL)
     include(cmake/GameplayStrandsInstall.cmake)
-endif()
+
+    install(TARGETS GameplayStrandsFrontend
+            EXPORT GameplayStrandsTargets
+            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+            FILE_SET generated_headers DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    )
+endif ()

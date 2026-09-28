@@ -3,7 +3,7 @@
 namespace gstrands {
 namespace diag {
 #define GET_DiagnosticsTable_IMPL
-#include "DiagnosticDefs.inc"
+#include "gstrands/Frontend/Basic/DiagnosticDefs.inc"
 
 } // namespace diag
 

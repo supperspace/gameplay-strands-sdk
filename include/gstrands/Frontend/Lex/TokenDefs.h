@@ -26,6 +26,6 @@ ArrayRef<KeywordInfo> getKeywords();
 #define GET_TokenKind_DECL
 #define GET_TokenTable_DECL
 
-#include "TokenKinds.inc"
+#include "gstrands/Frontend/Lex/TokenKinds.inc"
 
 } // namespace gstrands::tok

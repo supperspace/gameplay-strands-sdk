@@ -100,4 +100,10 @@ void Parser::parseQualifiedName() {
   }
 }
 
+void Parser::skipUntil(const tok::TokenKind K) {
+  while (Tokens.lookAhead().Kind != K) {
+    Tokens.consume();
+  }
+}
+
 } // namespace gstrands
