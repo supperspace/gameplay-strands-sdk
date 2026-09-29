@@ -23,11 +23,18 @@ public:
 
   };
 
-  virtual ~Decl() = 0;
+  DeclContext *asDeclContext();
+  const DeclContext *asDeclContext() const { return const_cast<Decl*>(this)->asDeclContext(); }
 
-  virtual DeclContext *asDeclContext() { return nullptr; }
-  virtual const DeclContext *asDeclContext() const { return nullptr; }
-  bool isDeclContext() const { return asDeclContext() != nullptr; }
+  bool isDeclContext() const {
+    switch (getKind()) {
+#define ABSTRACT_DECL(...)
+#define DECL(...)
+#define DECL_CONTEXT(Name) case Name: return true;
+#include "gstrands/Frontend/AST/DeclNodes.inc"
+    default: return false;
+    }
+  }
 
   Kind getKind() const { return DeclKind; }
 
@@ -42,7 +49,6 @@ private:
 
 class DeclContext {
 public:
-  virtual ~DeclContext() = 0;
   static bool classof(const Decl *D) { return D->isDeclContext(); }
 
 private:

@@ -12,12 +12,20 @@ protected:
 };
 
 // NOLINTNEXTLINE(misc-multiple-inheritance)
+class NamespaceDecl: public NamedDecl, public DeclContext {
+public:
+  static bool classof(const Decl *D) { return D->getKind() == Namespace; }
+
+  explicit NamespaceDecl(const SourceLocation L)
+    : NamedDecl(Namespace, L) {}
+
+protected:
+};
+
+// NOLINTNEXTLINE(misc-multiple-inheritance)
 class RecordDecl : public NamedDecl, public DeclContext {
 public:
   static bool classof(const Decl *D) { return D->getKind() >= firstRecord && D->getKind() <= lastRecord; }
-
-  DeclContext *asDeclContext() override { return this; }
-  const DeclContext *asDeclContext() const override { return this; }
 
 protected:
   using NamedDecl::NamedDecl;
