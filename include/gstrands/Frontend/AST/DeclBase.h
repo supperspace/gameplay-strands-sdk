@@ -51,8 +51,15 @@ class DeclContext {
 public:
   static bool classof(const Decl *D) { return D->isDeclContext(); }
 
+  void setChildren(const llvm::ArrayRef<Decl*> C) {
+    Children = C;
+  }
+
+  llvm::ArrayRef<Decl*> getChildren() { return Children; }
+  llvm::ArrayRef<const Decl*> getChildren() const { return Children; }
+
 private:
-  llvm::ArrayRef<const Decl *> Children;
+  llvm::ArrayRef<Decl *> Children;
 };
 
 } // namespace gstrands

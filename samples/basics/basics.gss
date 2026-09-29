@@ -1,0 +1,54 @@
+trait Strength {
+  property Value: int;
+}
+
+/// Namespaces are simple containers for their inner definitions. They are not required.
+namespace basics {
+
+  /// A channel is a loose coupling tool. Components can bind sources or targets to data channels and they will
+  /// form automatic connections between the properties bound
+  channel AdditiveStrengthModifiers: int;
+
+  /// Components may carry properties and mutations. The fundamental authored concept.
+  /// There is no inheritance, but any component can include other components through composition.
+  component CoreAttributes {
+    /// A collector property is a container of values that can be populated through channel bindings
+    property AdditiveStrengthModifiers: int collector;
+
+    /// This property's value cannot be written after initialization. (const)
+    property BaseStrength: const int = 100;
+
+    /// This property is recomputed when its inputs change. (derived keyword)
+    property Strength: derived int = sum(AdditiveStrengthModifiers) + BaseStrength;
+
+    /// Here we're binding the CoreAttributes::AdditiveStrengthModifiers property
+    /// to the basics::AdditiveStrengthModifiers data channel as a target
+    /// So when properties are bound as sources to this channel, they will create new entries representing their values
+    /// within the collector in this case
+    bind target AdditiveStrengthModifiers to basics::AdditiveStrengthModifiers;
+  }
+
+  /// An impl is the glue between a component and a trait. implementations are needed every time we want a component to
+  /// be usable through a trait
+  impl Strength on CoreAttributes {
+    /// the CoreAttributes component has no Value property, but we can forward its Strength property as the
+    /// Strength::Value
+    using Value = CoreAttributes::Strength;
+  }
+
+
+}
+
+/// Namespace names can be qualified at definition time
+namespace gameplay::modifiers {
+
+  component AdditiveStrengthModifier {
+    property AddedValue: const int = 50;
+
+    /// Here we're binding AddedValue as a source to the basics::AdditiveStrengthModifiers data channel
+    /// Every time a component of AdditiveStrengthModifier will be added to a binding context shared with a
+    /// CoreAttributes, the latter CoreAttributes::AdditiveStrengthModifiers will gain a new entry for as long as
+    /// the former is alive
+    bind source AddedValue to basics::AdditiveStrengthModifiers;
+  }
+}

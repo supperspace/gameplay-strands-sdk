@@ -1,9 +1,14 @@
 #pragma once
+
 #include "gstrands/Frontend/Lex/Token.h"
+#include "gstrands/Frontend/AST/DeclFwd.h"
+
+#include <stack>
 
 namespace gstrands {
 class DiagnosticsEngine;
 class Lexer;
+class ASTContext;
 
 class TokenStream {
 public:
@@ -25,29 +30,58 @@ private:
 
 class Parser {
 public:
-  explicit Parser(Lexer &Lex, DiagnosticsEngine &DE) : Tokens(Lex), Diag(DE) {}
+  explicit Parser(Lexer &Lex, DiagnosticsEngine &DE, ASTContext& AST) : Tokens(Lex), Diag(DE), Context(AST) {}
 
   void parse();
 
 private:
-  void parseTopLevelDecl();
 
-  void parseNamespaceDecl();
-  void parseComponentDecl();
-  void parseTraitDecl();
-  void parseMutationDecl();
-  void parsePropertyDecl();
 
-  void parseExpression();
+  struct ParserFrame {
+    uint16_t AllowsNamespace: 1 = false;
+    uint16_t AllowsTypeDecl: 1  = false;
+    uint16_t AllowsChannel: 1   = false;
+  };
 
-  void parseStatement();
+  struct ScopedParserFrame {
+    [[nodiscard]] ScopedParserFrame(Parser* P, const ParserFrame F)
+      : P(*P) {
+      P->ParserFrameStack.push(F);
+    }
+
+    ~ScopedParserFrame() {
+      P.ParserFrameStack.pop();
+    }
+
+    ScopedParserFrame(const ScopedParserFrame&) = delete;
+    ScopedParserFrame(ScopedParserFrame&&) = delete;
+    ScopedParserFrame& operator=(const ScopedParserFrame&) = delete;
+    ScopedParserFrame& operator=(ScopedParserFrame&&) = delete;
+
+    Parser& P;
+  };
+
+  Decl* parseDecl();
+  llvm::SmallVector<Decl*, 16> parseDecls(tok::TokenKind Until);
+
+  NamespaceDecl* parseNamespaceDecl();
+  ComponentDecl* parseComponentDecl();
+  TraitDecl* parseTraitDecl();
+  ImplDecl* parseImplDecl();
+  ChannelDecl* parseChannelDecl();
 
   void parseQualifiedName();
 
   void skipUntil(tok::TokenKind K);
+  /// Skips until the next '}', and if additional '{' are encountered, it skips over their enclosing '}' too
+  /// returns true if an enclosing brace was found before EndOfFile
+  bool skipUntilEnclosingBrace();
 
   TokenStream Tokens;
   DiagnosticsEngine &Diag;
+  ASTContext &Context;
+
+  std::stack<ParserFrame> ParserFrameStack;
 };
 
 } // namespace gstrands

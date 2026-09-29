@@ -30,7 +30,6 @@ namespace gstrands {
     
     llvm::StringRef Spelling;
 
-    LLVM_PREFERRED_TYPE(bool);
     uint32_t IsMalformed: 1 = false;
   };
   

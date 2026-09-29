@@ -1,5 +1,6 @@
 #include "gstrands/Frontend/CompilerInvocation.h"
 
+#include "gstrands/Frontend/AST/ASTContext.h"
 #include "gstrands/Frontend/Basic/ConsoleOutputDiagSink.h"
 #include "gstrands/Frontend/Basic/Diagnostics.h"
 #include "gstrands/Frontend/Lex/Lexer.h"
@@ -78,8 +79,9 @@ CompilationResult CompilerInvocation::compile() {
       return {}; // This would be a fatal error
     }
 
+    std::unique_ptr<ASTContext> AST = std::make_unique<ASTContext>(SourceBuffer.get().BaseLocation);
     Lexer Lex{SourceBuffer.get(), *Identifiers};
-    Parser Parse{Lex, *DiagEngine};
+    Parser Parse{Lex, *DiagEngine, *AST};
 
     Parse.parse();
   }

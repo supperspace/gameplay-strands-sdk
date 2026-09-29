@@ -33,6 +33,10 @@ public:
     return End;
   }
 
+  explicit(false) operator SourceLocation() const {
+    return getStartLoc();
+  }
+
 private:
   SourceLocation Start;
   SourceLocation End;

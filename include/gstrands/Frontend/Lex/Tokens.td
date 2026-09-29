@@ -90,6 +90,7 @@ def KwPort        : Keyword<"port">;
 def KwBind        : Keyword<"bind">;
 def KwTo          : Keyword<"to">;
 def KwOn          : Keyword<"on">;
+def KwChannel     : Keyword<"channel">;
 
 // Member access.
 def Period : Punctuator<".">;

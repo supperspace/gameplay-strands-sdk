@@ -2,7 +2,8 @@
 
 namespace gstrands {
 
-#define ABSTRACT_DECL(...)
+class Decl;
+
 #define DECL(Name, ...) class Name##Decl;
 #include "gstrands/Frontend/AST/DeclNodes.inc"
 

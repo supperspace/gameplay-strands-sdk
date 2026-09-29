@@ -36,6 +36,8 @@ class Remark<string str>    : Diagnostic<str, CLASS_REMARK, SEV_Ignored>;
 // All the diagnostics the compiled can emit follow below. It might become sensible at some point to break this file down
 
 def ParseError: Error<"parse-error">;
+def SyntaxError: Error<"syntax-error">;
+def DeclNotAllowed: Error<"declaration-not-allowed">;
 
 
 def DiagnosticId: GenericEnum {

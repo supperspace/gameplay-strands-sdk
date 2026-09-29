@@ -3,6 +3,15 @@
 
 namespace gstrands {
 
+// NOLINTNEXTLINE(misc-multiple-inheritance)
+class RootDecl: public Decl, public DeclContext {
+public:
+  static bool classof(const Decl *D) { return D->getKind() == Root; }
+
+  explicit RootDecl(const SourceLocation L)
+    : Decl(Root, L) {}
+};
+
 class NamedDecl : public Decl {
 public:
   static bool classof(const Decl *D) { return D->getKind() >= firstNamed && D->getKind() <= lastNamed; }
@@ -20,6 +29,14 @@ public:
     : NamedDecl(Namespace, L) {}
 
 protected:
+};
+
+class ChannelDecl: public NamedDecl {
+public:
+  static bool classof(const Decl *D) { return D->getKind() == Channel; }
+
+  explicit ChannelDecl(const SourceLocation L)
+    : NamedDecl(Channel, L) {}
 };
 
 // NOLINTNEXTLINE(misc-multiple-inheritance)
@@ -43,6 +60,13 @@ public:
   static bool classof(const Decl *D) { return D->getKind() == Trait; }
 
   explicit TraitDecl(const SourceLocation L) : RecordDecl(Trait, L) {}
+};
+
+class ImplDecl: public RecordDecl {
+public:
+  static bool classof(const Decl *D) { return D->getKind() == Impl; }
+
+  explicit ImplDecl(const SourceLocation L) : RecordDecl(Impl, L) {}
 };
 
 class ValueDecl : public NamedDecl {
