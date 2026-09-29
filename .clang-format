@@ -1,2 +1,5 @@
 BasedOnStyle: LLVM
 LineEnding: LF
+
+# Use a more generous column limit than llvn
+ColumnLimit: 120

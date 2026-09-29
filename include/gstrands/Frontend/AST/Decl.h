@@ -1,11 +1,70 @@
 #pragma once
-#include "ASTDefs.h"
+#include "DeclBase.h"
 
 namespace gstrands {
 
-class Decl {
-private:
-  DeclKind K = DeclKind::Unknown;
+class NamedDecl : public Decl {
+public:
+  static bool classof(const Decl *D) { return D->getKind() >= firstNamed && D->getKind() <= lastNamed; }
+
+protected:
+  NamedDecl(const Kind K, const SourceLocation L) : Decl(K, L) {}
 };
+
+// NOLINTNEXTLINE(misc-multiple-inheritance)
+class RecordDecl : public NamedDecl, public DeclContext {
+public:
+  static bool classof(const Decl *D) { return D->getKind() >= firstRecord && D->getKind() <= lastRecord; }
+
+  DeclContext *asDeclContext() override { return this; }
+  const DeclContext *asDeclContext() const override { return this; }
+
+protected:
+  using NamedDecl::NamedDecl;
+};
+
+class ComponentDecl : public RecordDecl {
+public:
+  static bool classof(const Decl *D) { return D->getKind() == Component; }
+
+  explicit ComponentDecl(const SourceLocation L) : RecordDecl(Component, L) {}
+};
+
+class TraitDecl : public RecordDecl {
+public:
+  static bool classof(const Decl *D) { return D->getKind() == Trait; }
+
+  explicit TraitDecl(const SourceLocation L) : RecordDecl(Trait, L) {}
+};
+
+class ValueDecl : public NamedDecl {
+public:
+  static bool classof(const Decl *D) { return D->getKind() >= firstValue && D->getKind() <= lastValue; }
+
+protected:
+  using NamedDecl::NamedDecl;
+};
+
+class FieldDecl : public ValueDecl {
+public:
+  static bool classof(const Decl *D) { return D->getKind() == Field; }
+
+  explicit FieldDecl(const SourceLocation L) : ValueDecl(Field, L) {}
+};
+
+class VarDecl : public ValueDecl {
+public:
+  static bool classof(const Decl *D) { return D->getKind() == Var; }
+
+  explicit VarDecl(const SourceLocation L) : ValueDecl(Var, L) {}
+};
+
+class ParmVarDecl : public ValueDecl {
+public:
+  static bool classof(const Decl *D) { return D->getKind() == ParmVar; }
+
+  explicit ParmVarDecl(const SourceLocation L) : ValueDecl(ParmVar, L) {}
+};
+
 
 } // namespace gstrands
