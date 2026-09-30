@@ -1,0 +1,21 @@
+{
+  "name": "gameplaystrands-dsl",
+  "displayName": "Gameplay Strands DSL",
+  "version": "0.0.1",
+  "contributes": {
+    "languages": [
+      {
+        "id": "gstrands",
+        "aliases": ["GameplayStrands"],
+        "extensions": [".gss"]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "gstrands",
+        "scopeName": "source.gstrands",
+        "path": "./gstrands.tmLanguage.json"
+      }
+    ]
+  }
+}

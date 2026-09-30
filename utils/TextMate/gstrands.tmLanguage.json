@@ -1,0 +1,41 @@
+{
+  "name": "Gameplay Strands DSL",
+  "scopeName": "source.gstrands",
+  "fileTypes": ["gss"],
+  "patterns": [
+    { "include":  "#comments" },
+    { "include":  "#type-declarations" },
+    { "include":  "#keywords" },
+    { "include":  "#builtin-types" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.gstrands",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.gstrands",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "type-declarations": {
+      "match": "\\b(component|trait|struct)\\b\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": { "name":  "storage.type.gstrands" },
+        "2": { "name":  "entity.name.type.gstrands" }
+      }
+    },
+    "keywords": {
+      "match": "\\b(namespace|channel|impl|property|mutation|function|bind|to|on|using|collector|const|derived|if|else|return)\\b",
+      "name": "keyword.other.strands"
+    },
+    "builtin-types": {
+      "match": "\\b(bool|int|float|duration)\\b",
+      "name": "storage.type.gstrands"
+    }
+  }
+}
