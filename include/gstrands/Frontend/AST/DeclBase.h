@@ -55,8 +55,8 @@ public:
     Children = C;
   }
 
-  llvm::ArrayRef<Decl*> getChildren() { return Children; }
-  llvm::ArrayRef<const Decl*> getChildren() const { return Children; }
+  llvm::ArrayRef<Decl*> decls() { return Children; }
+  llvm::ArrayRef<const Decl*> decls() const { return Children; }
 
 private:
   llvm::ArrayRef<Decl *> Children;

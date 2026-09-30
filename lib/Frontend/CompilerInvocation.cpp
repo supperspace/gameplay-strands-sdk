@@ -72,6 +72,8 @@ CompilerInvocation::createFromProjectDefinition(
 }
 
 CompilationResult CompilerInvocation::compile() {
+  CompilationResult Result;
+
   for (llvm::StringRef Source : SourceFiles) {
 
     auto SourceBuffer = SM->getOrLoadBuffer(Source);
@@ -79,14 +81,14 @@ CompilationResult CompilerInvocation::compile() {
       return {}; // This would be a fatal error
     }
 
-    std::unique_ptr<ASTContext> AST = std::make_unique<ASTContext>(SourceBuffer.get().BaseLocation);
+    Result.ASTs.emplace_back(std::make_unique<ASTContext>(SourceBuffer.get().BaseLocation));
     Lexer Lex{SourceBuffer.get(), *Identifiers};
-    Parser Parse{Lex, *DiagEngine, *AST};
+    Parser Parse{Lex, *DiagEngine, *Result.ASTs.back()};
 
     Parse.parse();
   }
 
-  return {};
+  return Result;
 }
 
 

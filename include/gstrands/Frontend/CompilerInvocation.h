@@ -12,11 +12,14 @@
 #include <utility>
 
 namespace gstrands {
+class ASTContext;
 class DiagnosticsSink;
 class DiagnosticsEngine;
 class ProjectDefinition;
 
-struct CompilationResult {};
+struct CompilationResult {
+  std::vector<std::unique_ptr<ASTContext>> ASTs;
+};
 
 class CompilerInvocation {
 public:
@@ -25,7 +28,7 @@ public:
   static llvm::Expected<std::unique_ptr<CompilerInvocation>>
   createFromProjectDefinition(const ProjectDefinition &ProjectDef);
 
-  CompilationResult compile();
+  [[nodiscard]] CompilationResult compile();
 private:
   template <std::ranges::input_range R>
     requires std::convertible_to<std::ranges::range_reference_t<R>,

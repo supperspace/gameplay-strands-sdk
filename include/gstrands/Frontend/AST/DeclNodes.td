@@ -15,7 +15,7 @@ def Named : DeclNode<Decl, "named declarations", 1>;
   // def Type : DeclNode<Named, "types", 1>;
     // def Enum : DeclNode<Type, "enums">;
   def Channel : DeclNode<Named, "channels">;
-  def Record : DeclNode<Named, "traits, components">, DeclContext;
+  def Record : DeclNode<Named, "traits, components", 1>, DeclContext;
     def Trait: DeclNode<Record, "traits">;
     def Component: DeclNode<Record, "components">;
     def Impl: DeclNode<Record, "implementations">;
