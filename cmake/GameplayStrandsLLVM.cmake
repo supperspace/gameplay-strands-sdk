@@ -34,3 +34,28 @@ if(NOT TARGET GameplayStrands::LLVMSupport)
             INTERFACE LLVMSupport
     )
 endif()
+
+if(NOT TARGET GameplayStrands::LLVMSupportLSP)
+    add_library(GameplayStrands::LLVMSupportLSP INTERFACE IMPORTED)
+
+    target_include_directories(GameplayStrands::LLVMSupportLSP
+            SYSTEM INTERFACE ${GAMEPLAYSTRANDS_LLVM_INCLUDE_DIRS}
+    )
+
+    separate_arguments(
+            gameplay_strands_llvm_definitions
+            NATIVE_COMMAND "${LLVM_DEFINITIONS}"
+    )
+
+    list(TRANSFORM gameplay_strands_llvm_definitions
+            REPLACE "^-D" ""
+    )
+
+    target_compile_definitions(GameplayStrands::LLVMSupportLSP
+            INTERFACE ${gameplay_strands_llvm_definitions}
+    )
+
+    target_link_libraries(GameplayStrands::LLVMSupportLSP
+            INTERFACE LLVMSupportLSP
+    )
+endif()

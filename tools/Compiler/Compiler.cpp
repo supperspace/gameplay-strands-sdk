@@ -3,6 +3,8 @@
 #include "gstrands/Frontend/ProjectDefinition.h"
 
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/LSP/Transport.h"
+#include "llvm/Support/Program.h"
 
 using namespace llvm;
 
@@ -10,6 +12,9 @@ namespace {
 cl::opt<std::string> BaseDir("base-dir", cl::desc("Base project dir"), cl::Required);
 
 cl::opt<std::string> OutputDir(cl::Positional, cl::desc("Output dir"), cl::Required);
+
+cl::opt<bool> LSPDaemonMode("lsp-daemon", cl::desc("If specified, runs as an LSP daemon"));
+cl::alias LSPDaemonAlias("d", cl::aliasopt(LSPDaemonMode));
 
 class DumpingASTVisitor : public gstrands::RecursiveASTVisitor<DumpingASTVisitor> {
 public:
@@ -47,32 +52,123 @@ public:
     return R;
   }
 
-  raw_ostream &dump() const {
-    return outs().indent(Indents * 2);
-  }
+  raw_ostream &dump() const { return outs().indent(Indents * 2); }
 
   size_t Indents = 0;
+};
+
+class StrandsLSPHandler {
+public:
+  void handleInitialize(const lsp::InitializeParams &InitParams, lsp::Callback<json::Object> CB) {
+    errs() << "LSP Client initialization\n";
+    if (InitParams.clientInfo) {
+      errs() << "Client Info:\n";
+
+      auto &ClientInfo = *InitParams.clientInfo;
+      errs().indent(2) << "Name: " << ClientInfo.name << "\n";
+      errs().indent(2) << "Version: " << (ClientInfo.version ? StringRef(*ClientInfo.version) : StringRef("")) << "\n";
+    } else {
+      errs() << "Client info missing\n";
+    }
+
+    if (InitParams.rootUri) {
+      errs() << "Root Uri: " << *InitParams.rootUri << "\n";
+    } else {
+      errs() << "No root uri provided\n";
+    }
+
+    if (InitParams.rootPath) {
+      errs() << "Root Path: " << *InitParams.rootPath << "\n";
+    } else {
+      errs() << "No root path provided\n";
+    }
+
+    if (InitParams.trace) {
+      StringRef StrTraceLevel = "off";
+      switch (*InitParams.trace) {
+      case lsp::TraceLevel::Verbose:
+        StrTraceLevel = "verbose";
+        break;
+      case lsp::TraceLevel::Messages:
+        StrTraceLevel = "messages";
+        break;
+      default:
+        break;
+      }
+
+      errs() << "Setting trace level to: " << StrTraceLevel << "\n";
+      switch (*InitParams.trace) {
+      case lsp::TraceLevel::Verbose:
+        lsp::Logger::setLogLevel(lsp::Logger::Level::Debug);
+        break;
+      case lsp::TraceLevel::Messages:
+        lsp::Logger::setLogLevel(lsp::Logger::Level::Info);
+        break;
+      default:
+        lsp::Logger::setLogLevel(lsp::Logger::Level::Error);
+        break;
+      }
+    } else {
+      errs() << "No trace level specified, defaulting to 'verbose'\n";
+      lsp::Logger::setLogLevel(lsp::Logger::Level::Debug);
+    }
+
+    CB(json::Object{{.K = "capabilities",
+                     .V = json::Object{{.K = "textDocumentSync",
+                                        .V = json::Object{{.K = "openClose", .V = true}, {.K = "change", .V = 1}}}}}});
+  }
+
+  void handleShutdown(const std::nullptr_t &, lsp::Callback<json::Value> CB) {
+    lsp::Logger::debug("Shutdown requested");
+
+    CB(nullptr);
+  }
+
+protected:
+
 };
 
 } // namespace
 
 int main(const int Argc, const char *Argv[]) {
-
   cl::ParseCommandLineOptions(Argc, Argv);
 
-  const gstrands::ProjectDefinition Project(BaseDir);
+  if (LSPDaemonMode) {
+    errs() << "Running in LSP mode\n";
 
-  auto ExpectedCompilerInvocation = gstrands::CompilerInvocation::createFromProjectDefinition(Project);
+    // Change stdin to binary mode so line endings stay predictable
+    sys::ChangeStdinToBinary();
 
-  if (ExpectedCompilerInvocation.takeError()) {
-    return 1;
+    lsp::JSONTransport LSPTransport(stdin, llvm::outs());
+    lsp::MessageHandler Handler(LSPTransport);
+    StrandsLSPHandler LSPHandler;
+
+    Handler.method("initialize", &LSPHandler, &StrandsLSPHandler::handleInitialize);
+    Handler.method("shutdown", &LSPHandler, &StrandsLSPHandler::handleShutdown);
+
+    if (auto Err = LSPTransport.run(Handler); Err) {
+      errs() << "LSP transport failed: " << toString(std::move(Err)) << "\n";
+      return 1;
+    }
+
+    errs() << "LSP transport stopped normally\n";
+
+  } else {
+    const gstrands::ProjectDefinition Project(BaseDir);
+
+    auto ExpectedCompilerInvocation = gstrands::CompilerInvocation::createFromProjectDefinition(Project);
+
+    if (ExpectedCompilerInvocation.takeError()) {
+      return 1;
+    }
+
+    const gstrands::CompilationResult Result = ExpectedCompilerInvocation.get()->compile();
+
+    DumpingASTVisitor Visitor;
+    for (const auto &AST : Result.ASTs) {
+      Visitor.traverseAST(*AST);
+    }
   }
 
-  const gstrands::CompilationResult Result = ExpectedCompilerInvocation.get()->compile();
-
-  DumpingASTVisitor Visitor;
-  for (const auto &AST : Result.ASTs) {
-    Visitor.traverseAST(*AST);
-  }
   return 0;
 }

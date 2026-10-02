@@ -12,6 +12,7 @@ target_link_libraries(GameplayStrandsCompiler
         PRIVATE
         GameplayStrands::Frontend
         GameplayStrands::LLVMSupport
+        GameplayStrands::LLVMSupportLSP
 )
 
 set_target_properties(GameplayStrandsCompiler

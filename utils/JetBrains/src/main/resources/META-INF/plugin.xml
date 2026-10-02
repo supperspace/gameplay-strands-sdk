@@ -1,0 +1,44 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>com.supperspace.gameplaystrands.gameplaystrands-jetbrains</id>
+
+    <!-- Public plugin name should be written in Title Case.
+     Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-name -->
+    <name>Gameplay Strands</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor url="https://www.supperspace.com">Supperspace Labs</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
+    <description><![CDATA[
+        Integration for the Gameplay Strands DSL.
+        ]]></description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.lsp</depends>
+    <depends>org.jetbrains.plugins.textmate</depends>
+
+    <resource-bundle>messages.MyMessageBundle</resource-bundle>
+
+    <!-- Extensions defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="StrandsToolWindow" anchor="bottom"
+                    factoryClass="com.supperspace.gameplaystrands.StrandsToolWindowFactory"
+                    icon="AllIcons.Toolwindows.ToolWindowPalette"/>
+
+        <applicationConfigurable parentId="language" id="com.supperspace.gameplaystrands.settings"
+                                 displayName="Gameplay Strands DSL"
+                                 instance="com.supperspace.gameplaystrands.StrandsSettingsConfigurable"/>
+
+        <textmate.bundleProvider
+                implementation="com.supperspace.gameplaystrands.StrandsTextMateBundleProvider"/>
+
+        <platform.lsp.integrationProvider
+                implementation="com.supperspace.gameplaystrands.StrandsDSLIntegrationProvider"/>
+    </extensions>
+    
+</idea-plugin>
