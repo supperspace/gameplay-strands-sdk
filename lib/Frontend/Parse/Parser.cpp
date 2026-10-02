@@ -104,13 +104,14 @@ llvm::SmallVector<Decl *, 16> Parser::parseDecls(const tok::TokenKind Until) {
 }
 
 NamespaceDecl * Parser::parseNamespaceDecl() {
-  SourceLocation StartLoc;
-  if (const auto OptTok = Tokens.conditionalConsume(tok::KwNamespace); OptTok) {
-    StartLoc = OptTok.value().SourceRange.getStartLoc();
-    parseQualifiedName();
-  }
+  auto Tok = Tokens.consume();
+  assert(Tok.Kind == tok::KwNamespace);
+  const SourceLocation StartLoc = Tok.SourceRange.getStartLoc();
 
-  auto& NewNamespace = Context.emplace<NamespaceDecl>(StartLoc);
+  const auto QualifiedName = parseQualifiedName();
+  assert(!QualifiedName.empty());
+
+  auto &NewNamespace = Context.emplace<NamespaceDecl>(StartLoc, Context.copyArray(llvm::ArrayRef(QualifiedName)));
 
   if (const auto T = Tokens.conditionalConsume(tok::LBrace); T != std::nullopt) {
     // Parse the declarations within
@@ -135,33 +136,47 @@ NamespaceDecl * Parser::parseNamespaceDecl() {
 }
 
 ComponentDecl* Parser::parseComponentDecl() {
-  SourceLocation StartLoc;
+  auto Tok = Tokens.consume();
+  assert(Tok.Kind == tok::KwComponent);
+  const SourceLocation StartLoc = Tok.SourceRange.getStartLoc();
 
-  if (const auto OptTok = Tokens.conditionalConsume(tok::KwComponent); OptTok) {
-    StartLoc = OptTok.value().SourceRange.getStartLoc();
-    parseQualifiedName(); // This should be just a name, no qualifiers allowed
+  Tok = Tokens.lookAhead();
+  if (Tok.Kind != tok::Identifier) {
+    // todo emit diag. Should we also insert some other identifier and continue parsing here, or how should we recover?
   }
+  else {
+    Tokens.consume();
+  }
+
+  const Identifier Ident = Tok.Ident;
 
   if (const auto T = Tokens.conditionalConsume(tok::LBrace); T != std::nullopt) {
     skipUntilEnclosingBrace(); // Just a temporary workaround so we can parse through the file
   }
 
-  return &Context.emplace<ComponentDecl>(StartLoc);
+  return &Context.emplace<ComponentDecl>(StartLoc, Ident);
 }
 
 TraitDecl* Parser::parseTraitDecl() {
-  SourceLocation StartLoc;
+  auto Tok = Tokens.consume();
+  assert(Tok.Kind == tok::KwTrait);
+  const SourceLocation StartLoc = Tok.SourceRange.getStartLoc();
 
-  if (const auto OptTok = Tokens.conditionalConsume(tok::KwTrait); OptTok) {
-    StartLoc = OptTok.value().SourceRange.getStartLoc();
-    parseQualifiedName(); // This should be just a name, no qualifiers allowed
+  Tok = Tokens.lookAhead();
+  if (Tok.Kind != tok::Identifier) {
+    // todo emit diag. Should we also insert some other identifier and continue parsing here, or how should we recover?
   }
+  else {
+    Tokens.consume();
+  }
+
+  const Identifier Ident = Tok.Ident;
 
   if (const auto T = Tokens.conditionalConsume(tok::LBrace); T != std::nullopt) {
     skipUntilEnclosingBrace(); // Just a temporary workaround so we can parse through the file
   }
 
-  return &Context.emplace<TraitDecl>(StartLoc);
+  return &Context.emplace<TraitDecl>(StartLoc, Ident);
 }
 
 ImplDecl *Parser::parseImplDecl() {
@@ -172,7 +187,7 @@ ImplDecl *Parser::parseImplDecl() {
   const SourceLocation StartLoc = Tok.SourceRange.getStartLoc();
 
   // Parse the trait name
-  parseQualifiedName(); // This should be just a name, no qualifiers allowed
+  const auto TraitName = parseQualifiedName(); // This should be just a name, no qualifiers allowed
 
   // then we expect 'on'
   Tok = Tokens.lookAhead();
@@ -185,37 +200,47 @@ ImplDecl *Parser::parseImplDecl() {
   }
 
   // Parse the component name
-  parseQualifiedName();
+  const auto ImplementerName = parseQualifiedName();
 
   // Then we expect the opening brace so we can skip the rest of the body from for now
   if (const auto T = Tokens.conditionalConsume(tok::LBrace); T != std::nullopt) {
     skipUntilEnclosingBrace(); // Just a temporary workaround so we can parse through the file
   }
 
-  return &Context.emplace<ImplDecl>(StartLoc);
+  return &Context.emplace<ImplDecl>(StartLoc, Context.copyArray(llvm::ArrayRef(TraitName)),
+                                    Context.copyArray(llvm::ArrayRef(ImplementerName)));
 }
 
 ChannelDecl *Parser::parseChannelDecl() {
-  SourceLocation StartLoc;
+  auto Tok = Tokens.consume();
+  assert(Tok.Kind == tok::KwChannel);
+  const SourceLocation StartLoc = Tok.SourceRange.getStartLoc();
 
-  if (const auto OptTok = Tokens.conditionalConsume(tok::KwChannel); OptTok) {
-    StartLoc = OptTok.value().SourceRange.getStartLoc();
-
-    // if (OptTok = Tokens.conditionalConsume(tok::KwChannel); OptTok) {
-    //
-    // }
+  Tok = Tokens.lookAhead();
+  if (Tok.Kind != tok::Identifier) {
+    // todo emit diag. Should we also insert some other identifier and continue parsing here, or how should we recover?
   }
-  skipUntil(tok::Semicolon);
+  else {
+    Tokens.consume();
+  }
 
-  return &Context.emplace<ChannelDecl>(StartLoc);
+  const Identifier Ident = Tok.Ident;
+
+  skipUntil(tok::Semicolon);
+  return &Context.emplace<ChannelDecl>(StartLoc, Ident);
 }
 
-void Parser::parseQualifiedName() {
+llvm::SmallVector<Identifier, 4> Parser::parseQualifiedName() {
+  llvm::SmallVector<Identifier, 4> Result;
+
   // a Qualified name has at least an identifier, so expect an identifier
   auto Tok = Tokens.lookAhead();
   if (Tok.Kind != tok::Identifier) {
     // we have a problem
     Diag.report(diag::ParseError, Tok.SourceRange.getStartLoc());
+  }
+  else {
+    Result.push_back(Tok.Ident);
   }
 
   Tokens.consume();
@@ -228,9 +253,14 @@ void Parser::parseQualifiedName() {
     if (Tok.Kind != tok::Identifier) {
       // once again, we're in trouble
     }
+    else {
+      Result.push_back(Tok.Ident);
+    }
     Tokens.consume();
     Tok = Tokens.lookAhead();
   }
+
+  return Result;
 }
 
 void Parser::skipUntil(const tok::TokenKind K) {

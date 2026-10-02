@@ -70,7 +70,7 @@ private:
   ImplDecl* parseImplDecl();
   ChannelDecl* parseChannelDecl();
 
-  void parseQualifiedName();
+  llvm::SmallVector<Identifier, 4> parseQualifiedName();
 
   void skipUntil(tok::TokenKind K);
   /// Skips until the next '}', and if additional '{' are encountered, it skips over their enclosing '}' too

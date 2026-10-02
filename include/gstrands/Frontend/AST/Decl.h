@@ -1,42 +1,47 @@
 #pragma once
 #include "DeclBase.h"
+#include "gstrands/Frontend/Basic/IdentifierTable.h"
 
 namespace gstrands {
 
 // NOLINTNEXTLINE(misc-multiple-inheritance)
-class RootDecl: public Decl, public DeclContext {
+class RootDecl : public Decl, public DeclContext {
 public:
   static bool classof(const Decl *D) { return D->getKind() == Root; }
 
-  explicit RootDecl(const SourceLocation L)
-    : Decl(Root, L) {}
+  explicit RootDecl(const SourceLocation L) : Decl(Root, L) {}
 };
 
 class NamedDecl : public Decl {
 public:
   static bool classof(const Decl *D) { return D->getKind() >= firstNamed && D->getKind() <= lastNamed; }
 
+  llvm::StringRef getNameSpelling() const { return Ident.getSpelling(); }
+
+  Identifier getIdentifier() const { return Ident; }
+
 protected:
-  NamedDecl(const Kind K, const SourceLocation L) : Decl(K, L) {}
+  NamedDecl(const Kind K, const SourceLocation L, const Identifier I) : Decl(K, L), Ident(I) {}
+  Identifier Ident;
 };
 
 // NOLINTNEXTLINE(misc-multiple-inheritance)
-class NamespaceDecl: public NamedDecl, public DeclContext {
+class NamespaceDecl : public NamedDecl, public DeclContext {
 public:
   static bool classof(const Decl *D) { return D->getKind() == Namespace; }
 
-  explicit NamespaceDecl(const SourceLocation L)
-    : NamedDecl(Namespace, L) {}
+  NamespaceDecl(const SourceLocation L, const llvm::ArrayRef<Identifier> QualName)
+      : NamedDecl(Namespace, L, QualName.back()) {}
 
 protected:
+  llvm::ArrayRef<Identifier> QualifiedName;
 };
 
-class ChannelDecl: public NamedDecl {
+class ChannelDecl : public NamedDecl {
 public:
   static bool classof(const Decl *D) { return D->getKind() == Channel; }
 
-  explicit ChannelDecl(const SourceLocation L)
-    : NamedDecl(Channel, L) {}
+  ChannelDecl(const SourceLocation L, const Identifier I) : NamedDecl(Channel, L, I) {}
 };
 
 // NOLINTNEXTLINE(misc-multiple-inheritance)
@@ -52,21 +57,30 @@ class ComponentDecl : public RecordDecl {
 public:
   static bool classof(const Decl *D) { return D->getKind() == Component; }
 
-  explicit ComponentDecl(const SourceLocation L) : RecordDecl(Component, L) {}
+  ComponentDecl(const SourceLocation L, const Identifier I) : RecordDecl(Component, L, I) {}
 };
 
 class TraitDecl : public RecordDecl {
 public:
   static bool classof(const Decl *D) { return D->getKind() == Trait; }
 
-  explicit TraitDecl(const SourceLocation L) : RecordDecl(Trait, L) {}
+  TraitDecl(const SourceLocation L, const Identifier I) : RecordDecl(Trait, L, I) {}
 };
 
-class ImplDecl: public RecordDecl {
+class ImplDecl : public Decl {
 public:
   static bool classof(const Decl *D) { return D->getKind() == Impl; }
 
-  explicit ImplDecl(const SourceLocation L) : RecordDecl(Impl, L) {}
+  explicit ImplDecl(const SourceLocation L, const llvm::ArrayRef<Identifier> QualTrait,
+                    const llvm::ArrayRef<Identifier> QualImplementer)
+      : Decl(Impl, L), QualifiedTrait(QualTrait), QualifiedImplementer(QualImplementer) {}
+
+  llvm::StringRef getTraitNameSpelling() const { return QualifiedTrait.back().getSpelling(); }
+  llvm::StringRef getImplementerNameSpelling() const { return QualifiedImplementer.back().getSpelling(); }
+
+private:
+  llvm::ArrayRef<Identifier> QualifiedTrait;
+  llvm::ArrayRef<Identifier> QualifiedImplementer;
 };
 
 class ValueDecl : public NamedDecl {
@@ -81,22 +95,21 @@ class FieldDecl : public ValueDecl {
 public:
   static bool classof(const Decl *D) { return D->getKind() == Field; }
 
-  explicit FieldDecl(const SourceLocation L) : ValueDecl(Field, L) {}
+  explicit FieldDecl(const SourceLocation L, const Identifier I) : ValueDecl(Field, L, I) {}
 };
 
 class VarDecl : public ValueDecl {
 public:
   static bool classof(const Decl *D) { return D->getKind() == Var; }
 
-  explicit VarDecl(const SourceLocation L) : ValueDecl(Var, L) {}
+  explicit VarDecl(const SourceLocation L, const Identifier I) : ValueDecl(Var, L, I) {}
 };
 
 class ParmVarDecl : public ValueDecl {
 public:
   static bool classof(const Decl *D) { return D->getKind() == ParmVar; }
 
-  explicit ParmVarDecl(const SourceLocation L) : ValueDecl(ParmVar, L) {}
+  explicit ParmVarDecl(const SourceLocation L, const Identifier I) : ValueDecl(ParmVar, L, I) {}
 };
-
 
 } // namespace gstrands
