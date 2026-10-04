@@ -1,0 +1,3 @@
+AddGameplayStrandsLibrary(Project)
+
+target_link_libraries(GameplayStrandsProject PUBLIC GameplayStrands::LLVMSupport)

@@ -1,11 +1,11 @@
 #include "gstrands/Frontend/CompilerInvocation.h"
 
-#include "../../include/gstrands/Frontend/Project/Project.h"
-#include "gstrands/Frontend/AST/ASTContext.h"
-#include "gstrands/Frontend/Basic/ConsoleOutputDiagSink.h"
-#include "gstrands/Frontend/Basic/Diagnostics.h"
-#include "gstrands/Frontend/Lex/Lexer.h"
-#include "gstrands/Frontend/Parse/Parser.h"
+#include "gstrands/Lex/Lexer.h"
+#include "gstrands/Parse/Parser.h"
+#include "gstrands/Project/Project.h"
+#include "gstrands/AST/ASTContext.h"
+#include "gstrands/Basic/ConsoleOutputDiagSink.h"
+#include "gstrands/Basic/Diagnostics.h"
 
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -20,6 +20,12 @@ CompilerInvocation::CompilerInvocation()
       SM(std::make_unique<SourceManager>(llvm::vfs::getRealFileSystem())),
       DiagSink(std::make_unique<ConsoleOutputDiagSink>(*SM)),
       DiagEngine(std::make_unique<DiagnosticsEngine>(*DiagSink)) {}
+
+CompilationResult::CompilationResult() = default;
+CompilationResult::CompilationResult(CompilationResult&&) noexcept = default;
+CompilationResult &CompilationResult::operator=(CompilationResult&&) noexcept = default;
+
+CompilationResult::~CompilationResult() = default;
 
 CompilerInvocation::~CompilerInvocation() = default;
 

@@ -1,0 +1,5 @@
+AddGameplayStrandsLibrary(Parse)
+
+target_link_libraries(GameplayStrandsParse PUBLIC GameplayStrands::Lex)
+target_link_libraries(GameplayStrandsParse PUBLIC GameplayStrands::AST)
+target_link_libraries(GameplayStrandsParse PUBLIC GameplayStrands::Basic)

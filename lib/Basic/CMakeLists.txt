@@ -1,0 +1,4 @@
+AddGameplayStrandsLibrary(Basic)
+
+target_link_libraries(GameplayStrandsBasic PUBLIC GameplayStrands::LLVMSupport)
+target_link_libraries(GameplayStrandsBasic PUBLIC GameplayStrands::Vocab)

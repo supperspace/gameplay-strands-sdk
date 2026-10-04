@@ -31,13 +31,14 @@ if (NOT TARGET LLVMSupport)
     )
 endif ()
 
+include(cmake/GameplayStrandsLLVM.cmake)
+include(cmake/GameplayStrandsTableGen.cmake)
+include(cmake/GameplayStrandsCommon.cmake)
+
 set(GAMEPLAYSTRANDS_TABLEGEN_INCLUDE_DIRS
         "${GameplayStrandsSDK_SOURCE_DIR}/include"
         ${GAMEPLAYSTRANDS_LLVM_INCLUDE_DIRS}
 )
-
-include(cmake/GameplayStrandsLLVM.cmake)
-include(cmake/GameplayStrandsTableGen.cmake)
 
 add_subdirectory(utils/TableGen)
 add_subdirectory(lib)
@@ -47,10 +48,15 @@ if (GAMEPLAYSTRANDS_BUILD_COMPILER)
     add_subdirectory(tools)
 endif ()
 
+get_property(GAMEPLAY_STRANDS_LIBRARIES GLOBAL
+        PROPERTY GAMEPLAY_STRANDS_LIBRARIES)
+
+message("All Libraries: ${GAMEPLAY_STRANDS_LIBRARIES}")
+
 if (GAMEPLAYSTRANDS_ENABLE_INSTALL)
     include(cmake/GameplayStrandsInstall.cmake)
 
-    install(TARGETS GameplayStrandsFrontend
+    install(TARGETS ${GAMEPLAY_STRANDS_LIBRARIES}
             EXPORT GameplayStrandsTargets
             ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
             FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"

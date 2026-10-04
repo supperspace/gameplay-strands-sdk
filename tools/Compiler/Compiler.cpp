@@ -1,6 +1,7 @@
-﻿#include "../../include/gstrands/Frontend/Project/Project.h"
-#include "gstrands/Frontend/AST/RecursiveASTVisitor.h"
+﻿#include "gstrands/AST/Decl.h"
+#include "gstrands/AST/RecursiveASTVisitor.h"
 #include "gstrands/Frontend/CompilerInvocation.h"
+#include "gstrands/Project/Project.h"
 
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/LSP/Transport.h"

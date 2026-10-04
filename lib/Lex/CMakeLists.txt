@@ -1,0 +1,4 @@
+AddGameplayStrandsLibrary(Lex)
+
+target_link_libraries(GameplayStrandsLex PUBLIC GameplayStrands::Basic)
+target_link_libraries(GameplayStrandsLex PUBLIC GameplayStrands::Vocab)

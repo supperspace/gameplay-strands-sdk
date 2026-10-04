@@ -1,0 +1,34 @@
+﻿#pragma once
+#include "gstrands/Basic/IdentifierTable.h"
+#include "gstrands/Basic/SourceLocation.h"
+
+#include "gstrands/Vocab/TokenDefs.h"
+
+namespace gstrands {
+
+  struct Token {
+
+    Token(const Identifier Ident, const SourceRange Range)
+      : Kind(Ident.getTokenKind())
+      , Ident(Ident)
+      , SourceRange(Range)
+      , Spelling(Ident.getSpelling()) {}
+
+    Token(const tok::TokenKind Kind, const SourceRange Range)
+      : Kind(Kind)
+      , SourceRange(Range) {}
+
+    Token() = default;
+
+    tok::TokenKind Kind = tok::Invalid;
+    Identifier Ident;
+
+    /// The full range this token is defined at
+    SourceRange SourceRange;
+    
+    llvm::StringRef Spelling;
+
+    uint32_t IsMalformed: 1 = false;
+  };
+  
+}// namespace gstrands
