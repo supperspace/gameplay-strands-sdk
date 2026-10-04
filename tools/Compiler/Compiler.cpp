@@ -1,10 +1,11 @@
-﻿#include "gstrands/Frontend/AST/RecursiveASTVisitor.h"
+﻿#include "../../include/gstrands/Frontend/Project/Project.h"
+#include "gstrands/Frontend/AST/RecursiveASTVisitor.h"
 #include "gstrands/Frontend/CompilerInvocation.h"
-#include "gstrands/Frontend/ProjectDefinition.h"
 
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/LSP/Transport.h"
 #include "llvm/Support/Program.h"
+#include "llvm/Support/VirtualFileSystem.h"
 
 using namespace llvm;
 
@@ -21,17 +22,17 @@ public:
   using Base = RecursiveASTVisitor<DumpingASTVisitor>;
 
   bool visitNamespaceDecl(const gstrands::NamespaceDecl *D) const {
-    dump() << "namespace\n";
+    dump() << "namespace " << D->getNameSpelling() << "\n";
     return true;
   }
 
   bool visitComponentDecl(const gstrands::ComponentDecl *D) const {
-    dump() << "component\n";
+    dump() << "component " << D->getNameSpelling() << "\n";
     return true;
   }
 
   bool visitTraitDecl(const gstrands::TraitDecl *D) const {
-    dump() << "trait\n";
+    dump() << "trait " << D->getNameSpelling() << "\n";
     return true;
   }
 
@@ -41,7 +42,7 @@ public:
   }
 
   bool visitChannelDecl(const gstrands::ChannelDecl *D) const {
-    dump() << "channel\n";
+    dump() << "channel " << D->getNameSpelling() <<  "\n";
     return true;
   }
 
@@ -124,6 +125,9 @@ public:
     CB(nullptr);
   }
 
+  void handleDidOpen(const lsp::DidOpenTextDocumentParams& DidOpenParams) {}
+  void handleDidChange(const lsp::DidChangeTextDocumentParams& DidChangeParams) {}
+
 protected:
 
 };
@@ -146,6 +150,10 @@ int main(const int Argc, const char *Argv[]) {
     Handler.method("initialize", &LSPHandler, &StrandsLSPHandler::handleInitialize);
     Handler.method("shutdown", &LSPHandler, &StrandsLSPHandler::handleShutdown);
 
+    Handler.notification("textDocument/didOpen", &LSPHandler, &StrandsLSPHandler::handleDidOpen);
+    Handler.notification("textDocument/didChange", &LSPHandler, &StrandsLSPHandler::handleDidChange);
+
+
     if (auto Err = LSPTransport.run(Handler); Err) {
       errs() << "LSP transport failed: " << toString(std::move(Err)) << "\n";
       return 1;
@@ -154,10 +162,14 @@ int main(const int Argc, const char *Argv[]) {
     errs() << "LSP transport stopped normally\n";
 
   } else {
-    const gstrands::ProjectDefinition Project(BaseDir);
+    const gstrands::Project Project(BaseDir, llvm::vfs::getRealFileSystem());
+
+    auto Inventory = Project.createSourceInventory();
+    if (auto EC = Inventory.takeError(); EC) {
+      return 1;
+    }
 
     auto ExpectedCompilerInvocation = gstrands::CompilerInvocation::createFromProjectDefinition(Project);
-
     if (ExpectedCompilerInvocation.takeError()) {
       return 1;
     }

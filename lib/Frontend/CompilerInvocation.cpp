@@ -1,14 +1,15 @@
 #include "gstrands/Frontend/CompilerInvocation.h"
 
+#include "../../include/gstrands/Frontend/Project/Project.h"
 #include "gstrands/Frontend/AST/ASTContext.h"
 #include "gstrands/Frontend/Basic/ConsoleOutputDiagSink.h"
 #include "gstrands/Frontend/Basic/Diagnostics.h"
 #include "gstrands/Frontend/Lex/Lexer.h"
 #include "gstrands/Frontend/Parse/Parser.h"
-#include "gstrands/Frontend/ProjectDefinition.h"
 
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/VirtualFileSystem.h"
 
 #include <set>
 
@@ -16,7 +17,7 @@ namespace gstrands {
 
 CompilerInvocation::CompilerInvocation()
     : Identifiers(std::make_unique<IdentifierTable>(Allocator)),
-      SM(std::make_unique<SourceManager>()),
+      SM(std::make_unique<SourceManager>(llvm::vfs::getRealFileSystem())),
       DiagSink(std::make_unique<ConsoleOutputDiagSink>(*SM)),
       DiagEngine(std::make_unique<DiagnosticsEngine>(*DiagSink)) {}
 
@@ -24,7 +25,7 @@ CompilerInvocation::~CompilerInvocation() = default;
 
 llvm::Expected<std::unique_ptr<CompilerInvocation>>
 CompilerInvocation::createFromProjectDefinition(
-    const ProjectDefinition &ProjectDef) {
+    const Project &ProjectDef) {
 
   std::error_code EC;
   const llvm::sys::fs::recursive_directory_iterator EndIterator = {};

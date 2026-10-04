@@ -2,10 +2,14 @@
 #include "SourceLocation.h"
 
 #include "llvm/ADT/IntervalMap.h"
+#include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/MemoryBuffer.h"
 
+namespace llvm::vfs {
+class FileSystem;
+}
 namespace gstrands {
 
 
@@ -16,7 +20,9 @@ struct SourceBufferView {
 
 class SourceManager {
 public:
-  SourceManager() = default;
+  explicit SourceManager(llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS);
+  ~SourceManager();
+
   SourceManager(const SourceManager &) = delete;
   SourceManager &operator=(const SourceManager &) = delete;
   SourceManager(SourceManager &&) = delete;
@@ -50,6 +56,7 @@ private:
   SourceLocationRangeMap SourceMap{SourceMapAllocator};
   llvm::StringMap<FileID> FilenameLookup;
   uint32_t SourceLocBaseOffset = 1;
+  llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> Filesystem;
 };
 
 } // namespace gstrands

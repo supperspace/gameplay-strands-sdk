@@ -4,8 +4,6 @@ file(GLOB_RECURSE frontend_public_headers
         "*.h"
 )
 
-
-
 target_sources(GameplayStrandsFrontend
         PUBLIC
         FILE_SET HEADERS

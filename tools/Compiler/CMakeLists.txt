@@ -13,6 +13,7 @@ target_link_libraries(GameplayStrandsCompiler
         GameplayStrands::Frontend
         GameplayStrands::LLVMSupport
         GameplayStrands::LLVMSupportLSP
+        GameplayStrands::Model
 )
 
 set_target_properties(GameplayStrandsCompiler

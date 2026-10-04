@@ -15,7 +15,7 @@ namespace gstrands {
 class ASTContext;
 class DiagnosticsSink;
 class DiagnosticsEngine;
-class ProjectDefinition;
+class Project;
 
 struct CompilationResult {
   std::vector<std::unique_ptr<ASTContext>> ASTs;
@@ -26,7 +26,7 @@ public:
   ~CompilerInvocation();
 
   static llvm::Expected<std::unique_ptr<CompilerInvocation>>
-  createFromProjectDefinition(const ProjectDefinition &ProjectDef);
+  createFromProjectDefinition(const Project &ProjectDef);
 
   [[nodiscard]] CompilationResult compile();
 private:

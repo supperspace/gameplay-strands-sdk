@@ -4,8 +4,14 @@
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/VirtualFileSystem.h"
 
 namespace gstrands {
+
+SourceManager::SourceManager(llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS)
+  : Filesystem(FS) {}
+
+SourceManager::~SourceManager() = default;
 
 llvm::Expected<SourceBufferView>
 SourceManager::getOrLoadBuffer(const llvm::Twine &SourceFile) {
@@ -57,6 +63,7 @@ SourceManager::getOrLoadBuffer(const llvm::Twine &SourceFile) {
 
     FilenameLookup[Resolved] = NewSourceId;
     SourceMap.insert(BaseOffset, EndOffset, NewSourceId);
+
 
     const auto &NewSourceInfo = Sources[NewSourceId];
 
