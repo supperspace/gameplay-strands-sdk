@@ -2,6 +2,7 @@
 #include "gstrands/AST/RecursiveASTVisitor.h"
 #include "gstrands/Basic/ConsoleOutputDiagSink.h"
 #include "gstrands/Frontend/CompilerInvocation.h"
+#include "gstrands/Model/SemanticModel.h"
 #include "gstrands/Project/Project.h"
 
 #include "llvm/Support/CommandLine.h"
@@ -176,8 +177,9 @@ int main(const int Argc, const char *Argv[]) {
     gstrands::SourceManager SrcMgr(llvm::vfs::getRealFileSystem());
     gstrands::ConsoleOutputDiagSink ConsoleDiagConsumer(SrcMgr);
     gstrands::IdentifierTable IdentTab(IdentAlloc);
+    gstrands::SemanticModel DummyModel;
 
-    auto Invocation = gstrands::CompilerInvocation(std::move(Inventory.get()), ConsoleDiagConsumer, IdentTab, SrcMgr);
+    auto Invocation = gstrands::CompilerInvocation(std::move(Inventory.get()), DummyModel, ConsoleDiagConsumer, IdentTab, SrcMgr);
     const gstrands::CompilationResult Result = Invocation.compile();
 
     DumpingASTVisitor Visitor;

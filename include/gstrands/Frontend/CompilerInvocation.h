@@ -17,6 +17,12 @@ class ASTContext;
 class DiagnosticsSink;
 class DiagnosticsEngine;
 class Project;
+class SemanticModel;
+
+struct CompilationStats {
+  size_t CountUpToDateFiles = 0;
+  size_t CountNewFiles = 0;
+};
 
 struct CompilationResult {
   CompilationResult();
@@ -29,12 +35,13 @@ struct CompilationResult {
   ~CompilationResult();
 
   std::vector<std::unique_ptr<ASTContext>> ASTs;
+  CompilationStats Stats;
 };
 
 class CompilerInvocation {
 public:
   CompilerInvocation() = delete;
-  CompilerInvocation(SourceInventory Inventory, DiagnosticsSink& DiagConsumer, IdentifierTable& Idents, SourceManager& SrcMgr);
+  CompilerInvocation(SourceInventory Inventory, SemanticModel& Baseline, DiagnosticsSink& DiagConsumer, IdentifierTable& Idents, SourceManager& SrcMgr);
 
   ~CompilerInvocation();
 
@@ -43,8 +50,9 @@ public:
 private:
   SourceInventory InputInventory;
 
-  llvm::BumpPtrAllocator Allocator;
+  SemanticModel& BaselineModel;
 
+  llvm::BumpPtrAllocator Allocator;
   IdentifierTable& Identifiers;
   SourceManager& SM;
   std::unique_ptr<DiagnosticsEngine> DiagEngine;

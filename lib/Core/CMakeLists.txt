@@ -1,0 +1,1 @@
+AddGameplayStrandsLibrary(Core LLVM_FREE)

@@ -1,3 +1,22 @@
+function(GameplayStrandsDisableExceptions Target)
+    if(MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        # MSVC and clang-cl
+        target_compile_options(${Target} PRIVATE
+                "$<$<COMPILE_LANGUAGE:CXX>:/EHs-c->"
+        )
+        target_compile_definitions(${Target} PRIVATE
+                "$<$<COMPILE_LANGUAGE:CXX>:_HAS_EXCEPTIONS=0>"
+        )
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
+        target_compile_options(${Target} PRIVATE
+                "$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>"
+        )
+    else()
+        message(FATAL_ERROR
+                "Exception flags unavailable for ${CMAKE_CXX_COMPILER_ID}")
+    endif()
+endfunction()
+
 function(AddGameplayStrandsLibrary LibName)
     cmake_parse_arguments(ARG "LLVM_FREE" "" "" ${ARGN})
 
@@ -13,6 +32,7 @@ function(AddGameplayStrandsLibrary LibName)
 
     if(ARG_LLVM_FREE)
         set(Distribution Core)
+        GameplayStrandsDisableExceptions(GameplayStrands${LibName})
     else()
         set(Distribution Compiler)
         llvm_update_compile_flags(GameplayStrands${LibName})

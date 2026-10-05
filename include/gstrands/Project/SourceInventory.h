@@ -1,27 +1,24 @@
 #pragma once
-#include "llvm/Support/VirtualFileSystem.h"
+#include "gstrands/Core/SourceFile.h"
+
+#include "llvm/ADT/StringMap.h"
+
+#include <ranges>
 
 namespace gstrands {
-
-struct SourceInventoryItem {
-  llvm::vfs::Status Status;
-  std::string NormPath;
-  std::array<uint8_t, 32> Blake3Digest;
-};
 
 /// Describes a full set of source files that a project includes, at a given time.
 class SourceInventory {
 public:
 
-  explicit SourceInventory(std::vector<SourceInventoryItem> Items)
-    : SourceItems(std::move(Items)) {}
-
-  llvm::ArrayRef<SourceInventoryItem> getSources() const {
-    return SourceItems;
+  const auto& getSources() const {
+    return Sources;
   }
 
+  void addSource(llvm::StringRef CanonicalPath, SourceFileSignature Signature);
+
 private:
-  std::vector<SourceInventoryItem> SourceItems;
+  llvm::StringMap<SourceFileSignature> Sources;
 };
 
 } // namespace gstrands

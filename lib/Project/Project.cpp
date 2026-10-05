@@ -29,9 +29,7 @@ llvm::Expected<SourceInventory> Project::createSourceInventory() const {
     return llvm::errorCodeToError(EC);
   }
 
-
-  std::vector<SourceInventoryItem> SourceInvItems;
-
+  SourceInventory Inventory;
   while (Iterator != End) {
     if (Iterator->type() == llvm::sys::fs::file_type::regular_file) {
       if (llvm::sys::path::extension(Iterator->path()) == ".gss") {
@@ -46,8 +44,11 @@ llvm::Expected<SourceInventory> Project::createSourceInventory() const {
         if (EC = R.getError(); EC)
           return llvm::errorCodeToError(EC);
 
+        SourceFileSignature Signature;
+        Signature.FileSize = R.get().getSize();
+        Signature.Timestamp = R.get().getLastModificationTime();
+
         // Add it to the input set
-        SourceInvItems.emplace_back(R.get(), Resolved.c_str());
         {
           auto ErrorOrBuff =
               FS->getBufferForFile(Iterator->path(), -1, false, false, false);
@@ -59,11 +60,10 @@ llvm::Expected<SourceInventory> Project::createSourceInventory() const {
           llvm::BLAKE3 Blake3;
           Blake3.update(Buff->getBuffer());
 
-          Blake3.final(SourceInvItems.back().Blake3Digest);
+          Blake3.final(Signature.Blake3Digest);
         }
 
-        llvm::errs() << "Source: '" << SourceInvItems.back().NormPath << "'\nDigest: '"
-                     << llvm::toHex(SourceInvItems.back().Blake3Digest, true) << "'\n\n";
+        Inventory.addSource(Resolved, Signature);
       }
     }
 
@@ -73,7 +73,7 @@ llvm::Expected<SourceInventory> Project::createSourceInventory() const {
       return llvm::errorCodeToError(EC);
   }
 
-  return SourceInventory{std::move(SourceInvItems)};
+  return Inventory;
 }
 
 } // namespace gstrands
