@@ -24,7 +24,7 @@ class StrandsDSLClientDescriptor(project: Project) : ProjectWideLspClientDescrip
 
     override fun createCommandLine(): GeneralCommandLine {
         val settings = service<StrandsSettings>()
-        return GeneralCommandLine(settings.serverExecutablePath, "--lsp-daemon", "--base-dir", "", "")
+        return GeneralCommandLine(settings.serverExecutablePath)
     }
 
     override fun startServerProcess(): BaseProcessHandler<*> {
