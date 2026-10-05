@@ -1,1 +1,1 @@
-﻿AddGameplayStrandsLibrary(Runtime)
+﻿AddGameplayStrandsLibrary(Runtime LLVM_FREE)

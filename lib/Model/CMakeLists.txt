@@ -1,1 +1,1 @@
-﻿AddGameplayStrandsLibrary(Model)
+﻿AddGameplayStrandsLibrary(Model LLVM_FREE)

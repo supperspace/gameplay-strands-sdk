@@ -56,10 +56,24 @@ message("All Libraries: ${GAMEPLAY_STRANDS_LIBRARIES}")
 if (GAMEPLAYSTRANDS_ENABLE_INSTALL)
     include(cmake/GameplayStrandsInstall.cmake)
 
-    install(TARGETS ${GAMEPLAY_STRANDS_LIBRARIES}
-            EXPORT GameplayStrandsTargets
-            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-            FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-            FILE_SET generated_headers DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-    )
+    foreach(Library IN LISTS GAMEPLAY_STRANDS_LIBRARIES)
+        get_target_property(Distribution "${Library}"
+                GAMEPLAYSTRANDS_DISTRIBUTION)
+
+        install(TARGETS "${Library}"
+                EXPORT "GameplayStrands${Distribution}Targets"
+
+                ARCHIVE
+                DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+                COMPONENT "${Distribution}"
+
+                FILE_SET HEADERS
+                DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+                COMPONENT "${Distribution}"
+
+                FILE_SET generated_headers
+                DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+                COMPONENT "${Distribution}"
+        )
+    endforeach()
 endif ()

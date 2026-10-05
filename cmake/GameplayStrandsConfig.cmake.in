@@ -1,9 +1,20 @@
 @PACKAGE_INIT@
 
-include(CMakeFindDependencyMacro)
-find_dependency(LLVM @GAMEPLAYSTRANDS_LLVM_VERSION@ EXACT CONFIG)
+include("${CMAKE_CURRENT_LIST_DIR}/GameplayStrandsCoreTargets.cmake")
+set(GameplayStrands_Core_FOUND TRUE)
 
-include("${CMAKE_CURRENT_LIST_DIR}/GameplayStrandsLLVM.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/GameplayStrandsTargets.cmake")
+set(GameplayStrands_Compiler_FOUND FALSE)
+
+if("Compiler" IN_LIST GameplayStrands_FIND_COMPONENTS)
+    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/GameplayStrandsCompilerTargets.cmake")
+        include(CMakeFindDependencyMacro)
+        find_dependency(LLVM @GAMEPLAYSTRANDS_LLVM_VERSION@ EXACT CONFIG)
+
+        include("${CMAKE_CURRENT_LIST_DIR}/GameplayStrandsLLVM.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/GameplayStrandsCompilerTargets.cmake")
+
+        set(GameplayStrands_Compiler_FOUND TRUE)
+    endif()
+endif()
 
 check_required_components(GameplayStrands)

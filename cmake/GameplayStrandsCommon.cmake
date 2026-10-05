@@ -1,4 +1,5 @@
 function(AddGameplayStrandsLibrary LibName)
+    cmake_parse_arguments(ARG "LLVM_FREE" "" "" ${ARGN})
 
     file(GLOB_RECURSE GSTRANDS_${LibName}_SRCS
             CONFIGURE_DEPENDS
@@ -10,7 +11,12 @@ function(AddGameplayStrandsLibrary LibName)
             ${GSTRANDS_${LibName}_SRCS}
     )
 
-    llvm_update_compile_flags(GameplayStrands${LibName})
+    if(ARG_LLVM_FREE)
+        set(Distribution Core)
+    else()
+        set(Distribution Compiler)
+        llvm_update_compile_flags(GameplayStrands${LibName})
+    endif()
 
     add_library(GameplayStrands::${LibName} ALIAS GameplayStrands${LibName})
 
@@ -21,10 +27,12 @@ function(AddGameplayStrandsLibrary LibName)
     set_target_properties(GameplayStrands${LibName} PROPERTIES
             EXPORT_NAME ${LibName}
             POSITION_INDEPENDENT_CODE ON
+            GAMEPLAYSTRANDS_DISTRIBUTION "${Distribution}"
     )
 
-    set_property(GLOBAL APPEND PROPERTY GAMEPLAY_STRANDS_LIBRARIES
-            "GameplayStrands${LibName}")
+    set_property(GLOBAL APPEND
+            PROPERTY GAMEPLAY_STRANDS_LIBRARIES "GameplayStrands${LibName}"
+    )
 
 endfunction()
 
