@@ -30,7 +30,7 @@ public:
 
   using FileID = uint32_t;
 
-  llvm::Expected<SourceBufferView> getOrLoadBuffer(const llvm::Twine &SourceFile);
+  llvm::Expected<SourceBufferView> getOrLoadBuffer(const llvm::StringRef SourceFile);
 private:
   struct SourceInfo {
     SourceInfo(const SourceInfo&) = delete;

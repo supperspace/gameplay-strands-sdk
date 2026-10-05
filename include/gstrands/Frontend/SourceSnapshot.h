@@ -1,4 +1,6 @@
 #pragma once
+#include "gstrands/Project/Project.h"
+
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 
 namespace llvm::vfs {
@@ -19,10 +21,22 @@ public:
   SourceSnapshot& operator=(const SourceSnapshot&) = delete;
   SourceSnapshot& operator=(SourceSnapshot&&) noexcept;
 
-  explicit SourceSnapshot(llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS);
+  SourceSnapshot(llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS, std::vector<Project> Ps);
   ~SourceSnapshot();
+
+  llvm::ArrayRef<Project> getProjects() const {
+    return Projects;
+  }
+
+  llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> getFilesystem() const;
+  SourceManager& getSourceManager() {
+    return *SM;
+  }
+
+
 private:
   llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> Filesystem;
   std::unique_ptr<SourceManager> SM;
+  std::vector<Project> Projects;
 };
 } // namespace gstrands

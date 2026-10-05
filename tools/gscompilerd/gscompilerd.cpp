@@ -1,15 +1,21 @@
+#include "gstrands/Basic/BufferingDiagConsumer.h"
 #include "gstrands/Frontend/CompilerInvocation.h"
+#include "gstrands/Frontend/Workspace.h"
+#include "gstrands/Model/SemanticModel.h"
 
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/LSP/Transport.h"
 #include "llvm/Support/Program.h"
 #include "llvm/Support/VirtualFileSystem.h"
+#include "llvm/TableGen/Error.h"
 
 using namespace llvm;
 
 namespace {
 class StrandsLSPHandler {
 public:
+  explicit StrandsLSPHandler(gstrands::Workspace &WS) : W(WS) {}
+
   void handleInitialize(const lsp::InitializeParams &InitParams, lsp::Callback<json::Object> CB) {
     errs() << "LSP Client initialization\n";
     if (InitParams.clientInfo) {
@@ -75,11 +81,55 @@ public:
     CB(nullptr);
   }
 
-  void handleDidOpen(const lsp::DidOpenTextDocumentParams& DidOpenParams) {}
-  void handleDidChange(const lsp::DidChangeTextDocumentParams& DidChangeParams) {}
+  void handleDidOpen(const lsp::DidOpenTextDocumentParams &DidOpenParams) {
+    processNewSourceSnapshot(W.fileOpened(DidOpenParams.textDocument.uri.file(), DidOpenParams.textDocument.text,
+                                          DidOpenParams.textDocument.version));
+  }
 
-protected:
+  void handleDidChange(const lsp::DidChangeTextDocumentParams &DidChangeParams) {
+    std::string CurrentContents = W.getDraftCopy(DidChangeParams.textDocument.uri.file());
 
+    if (const auto ApplyResult =
+            lsp::TextDocumentContentChangeEvent::applyTo(DidChangeParams.contentChanges, CurrentContents);
+        ApplyResult.succeeded()) {
+
+      processNewSourceSnapshot(W.fileChanged(DidChangeParams.textDocument.uri.file(), CurrentContents,
+                                             DidChangeParams.textDocument.version));
+    }
+  }
+
+  void handleDidSave(const lsp::DidSaveTextDocumentParams &DidSaveParams) {
+    processNewSourceSnapshot(W.fileSaved(DidSaveParams.textDocument.uri.file()));
+  }
+
+  void handleDidClose(const lsp::DidCloseTextDocumentParams &DidCloseParams) {
+    processNewSourceSnapshot(W.fileClosed(DidCloseParams.textDocument.uri.file()));
+  }
+
+private:
+  void processNewSourceSnapshot(gstrands::SourceSnapshot Snapshot) {
+    BumpPtrAllocator Alloc;
+    gstrands::BufferingDiagConsumer DiagConsumer;
+    gstrands::IdentifierTable IdentTab(Alloc);
+    gstrands::SemanticModel DummyModel;
+    auto &SrcMgr = Snapshot.getSourceManager();
+
+    auto FS = Snapshot.getFilesystem();
+    for (const auto &P : Snapshot.getProjects()) {
+      auto Inventory = P.createSourceInventory(*FS);
+      if (!Inventory.takeError()) {
+        auto Invocation =
+            gstrands::CompilerInvocation(std::move(Inventory.get()), DummyModel, DiagConsumer, IdentTab, SrcMgr);
+
+        const gstrands::CompilationResult Result = Invocation.compile();
+      }
+    }
+
+    // Now we should be in a position to send back diagnostics, but we need more QoL, such as filtering out diags from
+    // files that are not of interest (ie not open) and the ability to group diagnostics per file.
+  }
+
+  gstrands::Workspace &W;
 };
 
 } // namespace
@@ -94,14 +144,17 @@ int main(int Argc, const char **Argv) {
 
   lsp::JSONTransport LSPTransport(stdin, llvm::outs());
   lsp::MessageHandler Handler(LSPTransport);
-  StrandsLSPHandler LSPHandler;
+  gstrands::Workspace LSPWorkspace;
+
+  StrandsLSPHandler LSPHandler(LSPWorkspace);
 
   Handler.method("initialize", &LSPHandler, &StrandsLSPHandler::handleInitialize);
   Handler.method("shutdown", &LSPHandler, &StrandsLSPHandler::handleShutdown);
 
   Handler.notification("textDocument/didOpen", &LSPHandler, &StrandsLSPHandler::handleDidOpen);
   Handler.notification("textDocument/didChange", &LSPHandler, &StrandsLSPHandler::handleDidChange);
-
+  Handler.notification("textDocument/didSave", &LSPHandler, &StrandsLSPHandler::handleDidSave);
+  Handler.notification("textDocument/didClose", &LSPHandler, &StrandsLSPHandler::handleDidClose);
 
   if (auto Err = LSPTransport.run(Handler); Err) {
     errs() << "LSP transport failed: " << toString(std::move(Err)) << "\n";

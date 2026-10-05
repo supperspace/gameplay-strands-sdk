@@ -14,30 +14,12 @@ SourceManager::SourceManager(llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS)
 SourceManager::~SourceManager() = default;
 
 llvm::Expected<SourceBufferView>
-SourceManager::getOrLoadBuffer(const llvm::Twine &SourceFile) {
-  // Start by normalizing the path
-  llvm::SmallString<256> Absolute;
-  SourceFile.toVector(Absolute);
-
-  // Use CWD until we set up a workspace base directory concept
-  llvm::SmallString<256> CurrentPath;
-  if (auto EC = llvm::sys::fs::current_path(CurrentPath))
-    return llvm::errorCodeToError(EC);
-
-  llvm::sys::path::make_absolute(CurrentPath, Absolute);
-
-  llvm::SmallString<256> Resolved;
-  if (auto EC = llvm::sys::fs::real_path(Absolute, Resolved))
-    return llvm::errorCodeToError(EC);
-
-  llvm::sys::path::make_preferred(Resolved);
-  // BaseDirectory is absolute and fixed for this compilation.
-
-  if (const auto ExistingIter = FilenameLookup.find(Resolved);
+SourceManager::getOrLoadBuffer(const llvm::StringRef Path) {
+  if (const auto ExistingIter = FilenameLookup.find(Path);
       ExistingIter == FilenameLookup.end()) {
-    // Buffer not found. Open the file anew.
 
-    auto MemoryBuffer = llvm::MemoryBuffer::getFile(Resolved);
+    // Buffer not found. Open the file anew.
+    auto MemoryBuffer = Filesystem->getBufferForFile(Path);
     if (const std::error_code EC = MemoryBuffer.getError(); EC) {
       return llvm::errorCodeToError(EC);
     }
@@ -61,9 +43,8 @@ SourceManager::getOrLoadBuffer(const llvm::Twine &SourceFile) {
     FileID NewSourceId = Sources.size();
     Sources.emplace_back(BaseOffset, EndOffset, std::move(MemoryBuffer.get()));
 
-    FilenameLookup[Resolved] = NewSourceId;
+    FilenameLookup[Path] = NewSourceId;
     SourceMap.insert(BaseOffset, EndOffset, NewSourceId);
-
 
     const auto &NewSourceInfo = Sources[NewSourceId];
 

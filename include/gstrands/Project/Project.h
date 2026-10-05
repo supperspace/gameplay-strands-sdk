@@ -15,7 +15,7 @@ namespace gstrands {
 
   class Project {
   public:
-    Project(llvm::StringRef BaseDir, llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> F);
+    explicit Project(llvm::StringRef BaseDir);
 
     llvm::StringRef getBaseDirectory() const {
       return BaseDirectory;
@@ -24,12 +24,11 @@ namespace gstrands {
     /// Creates a source inventory in a given filesystem context. The source inventory is only valid at the time
     /// of its creation, and there is no reliable way of checking if the filesystem state has changed, other than
     /// creating another inventory and comparing them
-    llvm::Expected<SourceInventory> createSourceInventory() const;
+    llvm::Expected<SourceInventory> createSourceInventory(llvm::vfs::FileSystem& FS) const;
 
+    std::strong_ordering operator<=>(const Project &) const = default;
   private:
     llvm::SmallString<512> BaseDirectory;
-    std::error_code BaseDirNormalizationEC;
-    llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS;
   };
 
 } // namespace gstrands

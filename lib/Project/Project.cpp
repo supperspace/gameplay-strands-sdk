@@ -12,19 +12,19 @@
 
 namespace gstrands {
 
-Project::Project(const llvm::StringRef BaseDir, llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> F)
-  : FS(F) {
-  BaseDirNormalizationEC = FS->getRealPath(BaseDir, BaseDirectory);
-}
+Project::Project(const llvm::StringRef BaseDir)
+  : BaseDirectory(BaseDir)
+{}
 
-llvm::Expected<SourceInventory> Project::createSourceInventory() const {
-  if (BaseDirNormalizationEC)
-    return llvm::errorCodeToError(BaseDirNormalizationEC);
+llvm::Expected<SourceInventory> Project::createSourceInventory(llvm::vfs::FileSystem& FS) const {
+  llvm::SmallString<512> RealBaseDir;
+  std::error_code EC = FS.getRealPath(BaseDirectory, RealBaseDir);
 
-  std::error_code EC;
+  if (EC)
+    return llvm::errorCodeToError(EC);
 
   llvm::vfs::recursive_directory_iterator End;
-  llvm::vfs::recursive_directory_iterator Iterator(*FS, getBaseDirectory(), EC);
+  llvm::vfs::recursive_directory_iterator Iterator(FS, getBaseDirectory(), EC);
   if (EC) {
     return llvm::errorCodeToError(EC);
   }
@@ -37,10 +37,10 @@ llvm::Expected<SourceInventory> Project::createSourceInventory() const {
         // Start by normalizing the path
         llvm::SmallString<256> Resolved;
 
-        if (EC = FS->getRealPath(Iterator->path(), Resolved); EC)
+        if (EC = FS.getRealPath(Iterator->path(), Resolved); EC)
           return llvm::errorCodeToError(EC);
 
-        auto R = FS->status(Iterator->path());
+        auto R = FS.status(Iterator->path());
         if (EC = R.getError(); EC)
           return llvm::errorCodeToError(EC);
 
@@ -51,7 +51,7 @@ llvm::Expected<SourceInventory> Project::createSourceInventory() const {
         // Add it to the input set
         {
           auto ErrorOrBuff =
-              FS->getBufferForFile(Iterator->path(), -1, false, false, false);
+              FS.getBufferForFile(Iterator->path(), -1, false, false, false);
 
           if (EC = ErrorOrBuff.getError(); EC)
             return llvm::errorCodeToError(EC);

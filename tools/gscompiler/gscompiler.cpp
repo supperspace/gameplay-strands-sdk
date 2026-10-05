@@ -1,6 +1,6 @@
 ﻿#include "gstrands/AST/Decl.h"
 #include "gstrands/AST/RecursiveASTVisitor.h"
-#include "gstrands/Basic/ConsoleOutputDiagSink.h"
+#include "gstrands/Basic/StreamDiagConsumer.h"
 #include "gstrands/Frontend/CompilerInvocation.h"
 #include "gstrands/Model/SemanticModel.h"
 #include "gstrands/Project/Project.h"
@@ -61,9 +61,9 @@ public:
 int main(const int Argc, const char *Argv[]) {
   cl::ParseCommandLineOptions(Argc, Argv);
 
-  const gstrands::Project Project(BaseDir, llvm::vfs::getRealFileSystem());
+  const gstrands::Project Project(BaseDir);
 
-  auto Inventory = Project.createSourceInventory();
+  auto Inventory = Project.createSourceInventory(*llvm::vfs::getRealFileSystem());
   if (auto EC = Inventory.takeError(); EC) {
     return 1;
   }
@@ -71,7 +71,7 @@ int main(const int Argc, const char *Argv[]) {
   BumpPtrAllocator IdentAlloc;
 
   gstrands::SourceManager SrcMgr(llvm::vfs::getRealFileSystem());
-  gstrands::ConsoleOutputDiagSink ConsoleDiagConsumer(SrcMgr);
+  gstrands::StreamDiagConsumer ConsoleDiagConsumer(SrcMgr, outs());
   gstrands::IdentifierTable IdentTab(IdentAlloc);
   gstrands::SemanticModel DummyModel;
 

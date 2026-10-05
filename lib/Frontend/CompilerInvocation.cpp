@@ -1,8 +1,8 @@
 #include "gstrands/Frontend/CompilerInvocation.h"
 
 #include "gstrands/AST/ASTContext.h"
-#include "gstrands/Basic/ConsoleOutputDiagSink.h"
 #include "gstrands/Basic/Diagnostics.h"
+#include "gstrands/Basic/StreamDiagConsumer.h"
 #include "gstrands/Lex/Lexer.h"
 #include "gstrands/Model/SemanticModel.h"
 #include "gstrands/Parse/Parser.h"
