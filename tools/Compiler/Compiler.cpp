@@ -1,5 +1,6 @@
 ﻿#include "gstrands/AST/Decl.h"
 #include "gstrands/AST/RecursiveASTVisitor.h"
+#include "gstrands/Basic/ConsoleOutputDiagSink.h"
 #include "gstrands/Frontend/CompilerInvocation.h"
 #include "gstrands/Project/Project.h"
 
@@ -170,12 +171,14 @@ int main(const int Argc, const char *Argv[]) {
       return 1;
     }
 
-    auto ExpectedCompilerInvocation = gstrands::CompilerInvocation::createFromProjectDefinition(Project);
-    if (ExpectedCompilerInvocation.takeError()) {
-      return 1;
-    }
+    BumpPtrAllocator IdentAlloc;
 
-    const gstrands::CompilationResult Result = ExpectedCompilerInvocation.get()->compile();
+    gstrands::SourceManager SrcMgr(llvm::vfs::getRealFileSystem());
+    gstrands::ConsoleOutputDiagSink ConsoleDiagConsumer(SrcMgr);
+    gstrands::IdentifierTable IdentTab(IdentAlloc);
+
+    auto Invocation = gstrands::CompilerInvocation(std::move(Inventory.get()), ConsoleDiagConsumer, IdentTab, SrcMgr);
+    const gstrands::CompilationResult Result = Invocation.compile();
 
     DumpingASTVisitor Visitor;
     for (const auto &AST : Result.ASTs) {

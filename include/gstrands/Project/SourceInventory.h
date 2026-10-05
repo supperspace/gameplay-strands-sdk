@@ -16,6 +16,10 @@ public:
   explicit SourceInventory(std::vector<SourceInventoryItem> Items)
     : SourceItems(std::move(Items)) {}
 
+  llvm::ArrayRef<SourceInventoryItem> getSources() const {
+    return SourceItems;
+  }
+
 private:
   std::vector<SourceInventoryItem> SourceItems;
 };

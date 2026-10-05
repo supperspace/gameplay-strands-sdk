@@ -2,6 +2,7 @@
 
 #include "gstrands/Basic/IdentifierTable.h"
 #include "gstrands/Basic/SourceManager.h"
+#include "gstrands/Project/SourceInventory.h"
 
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/Allocator.h"
@@ -32,38 +33,20 @@ struct CompilationResult {
 
 class CompilerInvocation {
 public:
+  CompilerInvocation() = delete;
+  CompilerInvocation(SourceInventory Inventory, DiagnosticsSink& DiagConsumer, IdentifierTable& Idents, SourceManager& SrcMgr);
+
   ~CompilerInvocation();
 
-  static llvm::Expected<std::unique_ptr<CompilerInvocation>>
-  createFromProjectDefinition(const Project &ProjectDef);
+  [[nodiscard]] CompilationResult compile() const;
 
-  [[nodiscard]] CompilationResult compile();
 private:
-  template <std::ranges::input_range R>
-    requires std::convertible_to<std::ranges::range_reference_t<R>,
-                                 llvm::StringRef>
-  explicit CompilerInvocation(R &&InputSources)
-      : CompilerInvocation() {
-    if constexpr (std::ranges::sized_range<R>)
-      SourceFiles.reserve(std::ranges::size(InputSources));
-
-    for (auto &&Source : InputSources) {
-      if constexpr (std::is_lvalue_reference_v<R>)
-        SourceFiles.emplace_back(llvm::StringRef(Source));
-      else
-        SourceFiles.emplace_back(std::move(Source));
-    }
-  }
-
-  CompilerInvocation();
-
-  llvm::SmallVector<llvm::SmallString<256>, 64> SourceFiles;
+  SourceInventory InputInventory;
 
   llvm::BumpPtrAllocator Allocator;
 
-  std::unique_ptr<IdentifierTable> Identifiers;
-  std::unique_ptr<SourceManager> SM;
-  std::unique_ptr<DiagnosticsSink> DiagSink;
+  IdentifierTable& Identifiers;
+  SourceManager& SM;
   std::unique_ptr<DiagnosticsEngine> DiagEngine;
 };
 
