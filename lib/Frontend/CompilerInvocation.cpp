@@ -61,7 +61,7 @@ CompilationResult CompilerInvocation::compile() const {
 
       Result.ASTs.emplace_back(std::make_unique<ASTContext>(SourceBuffer.get().BaseLocation));
       Lexer Lex{SourceBuffer.get(), Identifiers};
-      Parser Parse{Lex, *DiagEngine, *Result.ASTs.back()};
+      Parser Parse{Lex, *DiagEngine, *Result.ASTs.back(), Identifiers};
 
       Parse.parse();
     }

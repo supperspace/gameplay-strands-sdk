@@ -106,6 +106,8 @@ public:
     processNewSourceSnapshot(W.fileClosed(DidCloseParams.textDocument.uri.file()));
   }
 
+  lsp::OutgoingNotification<lsp::PublishDiagnosticsParams> PublishDiagnosticsCB;
+
 private:
   void processNewSourceSnapshot(gstrands::SourceSnapshot Snapshot) {
     BumpPtrAllocator Alloc;
@@ -122,6 +124,35 @@ private:
             gstrands::CompilerInvocation(std::move(Inventory.get()), DummyModel, DiagConsumer, IdentTab, SrcMgr);
 
         const gstrands::CompilationResult Result = Invocation.compile();
+      }
+    }
+
+    if (PublishDiagnosticsCB) {
+      for (const auto& [Path, Metadata]: Snapshot.getSourceDrafts()) {
+        if (auto Uri = lsp::URIForFile::fromFile(Path); !Uri.takeError()) {
+          lsp::PublishDiagnosticsParams PublishParams(Uri.get(), Metadata.Version);
+
+          const auto File = SrcMgr.getFileId(Path);
+          for (const auto& Diag: DiagConsumer.getDiags()) {
+            const auto DiagFile = SrcMgr.getFileForLocation(Diag.Location);
+            if (DiagFile == File) {
+              auto ExpandedLoc = SrcMgr.expandSourceLocation(Diag.Location);
+
+              lsp::Diagnostic LspDiag;
+              // much todo
+              LspDiag.message = Diag.Message;
+              LspDiag.severity = lsp::DiagnosticSeverity::Error; // todo
+              // Note an expanded source location currently has byte offsets while our source might use a different encoding. So this is known incorrect
+              LspDiag.range = lsp::Range(lsp::Position(ExpandedLoc.Row, ExpandedLoc.Column));
+              PublishParams.diagnostics.push_back(LspDiag);
+            }
+          }
+
+          PublishDiagnosticsCB(PublishParams);
+        }
+        else {
+          errs() << Uri.takeError() << "\n";
+        }
       }
     }
 
@@ -155,6 +186,9 @@ int main(int Argc, const char **Argv) {
   Handler.notification("textDocument/didChange", &LSPHandler, &StrandsLSPHandler::handleDidChange);
   Handler.notification("textDocument/didSave", &LSPHandler, &StrandsLSPHandler::handleDidSave);
   Handler.notification("textDocument/didClose", &LSPHandler, &StrandsLSPHandler::handleDidClose);
+
+  LSPHandler.PublishDiagnosticsCB =
+      Handler.outgoingNotification<lsp::PublishDiagnosticsParams>("textDocument/publishDiagnostics");
 
   if (auto Err = LSPTransport.run(Handler); Err) {
     errs() << "LSP transport failed: " << toString(std::move(Err)) << "\n";

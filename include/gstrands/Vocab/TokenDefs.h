@@ -25,6 +25,8 @@ ArrayRef<KeywordInfo> getKeywords();
 
 #define GET_TokenKind_DECL
 #define GET_TokenTable_DECL
+#define GET_KeywordTable_DECL
+#define GET_DeclKeywordTable_DECL
 
 #include "gstrands/Vocab/TokenKinds.inc"
 

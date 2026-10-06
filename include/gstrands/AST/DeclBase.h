@@ -38,12 +38,25 @@ public:
 
   Kind getKind() const { return DeclKind; }
 
+  void setParent(DeclContext* P) {
+    Parent = P;
+  }
+
+  const DeclContext* getParent() const {
+    return Parent;
+  }
+
+  DeclContext* getParent() {
+    return Parent;
+  }
+
 protected:
   Decl(const Kind K, const SourceLocation L) : DeclKind(K), Loc(L) {}
 
 private:
   Kind DeclKind = Unknown;
   SourceLocation Loc;
+  DeclContext* Parent = nullptr;
 };
 
 

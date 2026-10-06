@@ -18,12 +18,40 @@ Token TokenStream::consume() {
   return Lex.lex();
 }
 
-Token TokenStream::lookAhead() {
-  if (BufferedTokens.empty()) {
-    BufferedTokens.push_back(Lex.lex());
+SourceRange TokenStream::consumeN(size_t N) {
+  SourceRange Range;
+  // First drop as many buffered tokens as possible
+  const size_t BufferedDropN = std::min(BufferedTokens.size(), N);
+  if (BufferedDropN > 0) {
+    Range = BufferedTokens.front().SourceRange + BufferedTokens[BufferedDropN - 1].SourceRange;
+    BufferedTokens.erase(BufferedTokens.begin(), BufferedTokens.begin() + BufferedDropN);
   }
 
-  return BufferedTokens.front();
+  // drop tokens one by one without buffering
+  N -= BufferedDropN;
+  while (N > 0) {
+
+    if (const auto T = Lex.lex(); T.Kind == tok::EndOfFile)
+      return Range;
+    else
+      Range = Range + T.SourceRange;
+    --N;
+  }
+
+  return Range;
+}
+
+Token TokenStream::lookAhead(const size_t N) {
+  if (N >= BufferedTokens.size()) {
+    ssize_t MissingTokenCount = static_cast<ssize_t>((N + 1) - BufferedTokens.size());
+    do {
+      BufferedTokens.push_back(Lex.lex());
+      --MissingTokenCount;
+    }
+    while (MissingTokenCount > 0);
+  }
+
+  return BufferedTokens[N];
 }
 
 std::optional<Token> TokenStream::conditionalConsume(tok::TokenKind K) {
@@ -34,10 +62,9 @@ std::optional<Token> TokenStream::conditionalConsume(tok::TokenKind K) {
 }
 
 void Parser::parse() {
-  constexpr ParserFrame RootFrame {
-    .AllowsNamespace = true,
-    .AllowsTypeDecl = true,
-    .AllowsChannel = true
+  static const ParserFrame RootFrame {
+    .ParentContext = Context.getRootDecl(),
+    .ContextKind = RootGrammar
   };
 
   const ScopedParserFrame F(this, RootFrame);
@@ -47,55 +74,83 @@ void Parser::parse() {
 }
 
 Decl *Parser::parseDecl() {
-  const auto& CurrentFrame = ParserFrameStack.top();
-
   const auto Tok = Tokens.lookAhead();
+
+  assert(startsDeclaration(Tok.Kind));
+  const bool IsDeclarationAccepted = acceptsDeclaration(Tok.Kind);
+
+  Decl *ParsedDecl = nullptr;
   switch (Tok.Kind) {
-  case tok::KwNamespace:
-    if (CurrentFrame.AllowsNamespace) {
-      return parseNamespaceDecl();
-    }
-    Diag.report(diag::DeclNotAllowed, Tok.SourceRange.getStartLoc());
-    break;
-  case tok::KwComponent:
-    if (CurrentFrame.AllowsTypeDecl) {
-      return parseComponentDecl();
-    }
-    Diag.report(diag::DeclNotAllowed, Tok.SourceRange.getStartLoc());
+  case tok::KwStruct:
+    llvm_unreachable("not yet implemented");
     break;
   case tok::KwTrait:
-    if (CurrentFrame.AllowsTypeDecl) {
-      return parseTraitDecl();
-    }
-    Diag.report(diag::DeclNotAllowed, Tok.SourceRange.getStartLoc());
+    ParsedDecl = parseTraitDecl();
+    break;
+  case tok::KwDelegate:
+    llvm_unreachable("not yet implemented");
+    break;
+  case tok::KwNamespace:
+    ParsedDecl = parseNamespaceDecl();
+    break;
+  case tok::KwComponent:
+    ParsedDecl = parseComponentDecl();
+    break;
+  case tok::KwLink:
+    llvm_unreachable("not yet implemented");
     break;
   case tok::KwImpl:
-    if (CurrentFrame.AllowsTypeDecl) {
-      return parseImplDecl();
-    }
-    Diag.report(diag::DeclNotAllowed, Tok.SourceRange.getStartLoc());
+    ParsedDecl = parseImplDecl();
     break;
   case tok::KwChannel:
-    if (CurrentFrame.AllowsChannel) {
-      return parseChannelDecl();
-    }
-    Diag.report(diag::DeclNotAllowed, Tok.SourceRange.getStartLoc());
-  default: break;
+    ParsedDecl = parseChannelDecl();
+    break;
+  case tok::KwDef:
+    llvm_unreachable("not yet implemented");
+    break;
+  case tok::KwProperty:
+    llvm_unreachable("not yet implemented");
+    break;
+  default:
+    llvm_unreachable("All declaration starters should be handled by explicit clauses.");
+    break;
   }
 
-  // todo: We need to think about the right recovery strategy for this case
-  Diag.report(diag::SyntaxError, Tok.SourceRange.getStartLoc());
-  return nullptr;
+  if (!IsDeclarationAccepted) {
+    Diag.report(diag::DeclNotAllowed, Tok.SourceRange.getStartLoc()) << "Declaration not allowed";
+  }
+  else {
+    ParsedDecl->setParent(getCurrentParseFrame().ParentContext);
+  }
+
+  return ParsedDecl;
 }
 
 llvm::SmallVector<Decl *, 16> Parser::parseDecls(const tok::TokenKind Until) {
   llvm::SmallVector<Decl *, 16> Result;
-
   auto Tok = Tokens.lookAhead();
+
   while (Tok.Kind != Until && Tok.Kind != tok::EndOfFile) {
-    Decl* NewDecl = parseDecl();
-    assert(NewDecl); // slapping an assertion until we decide how to hanle this case
-    Result.push_back(NewDecl);
+    size_t Distance = 0;
+    auto InitialLoc = Tok.SourceRange.getStartLoc();
+    while (!startsDeclaration(Tok.Kind) && Tok.Kind != tok::EndOfFile && Tok.Kind != Until) {
+      // start consuming
+      Tok = Tokens.lookAhead(++Distance);
+    }
+
+    if (Distance > 0) {
+      Diag.report(diag::ParseError, InitialLoc)
+          << "encountered " << Distance << " unexpected tokens starting at location";
+      Tokens.consumeN(Distance);
+    }
+
+    if (Tok.Kind == Until || Tok.Kind == tok::EndOfFile) {
+      break;
+    }
+
+    if (Decl* NewDecl = parseDecl(); NewDecl) {
+      Result.push_back(NewDecl);
+    }
 
     Tok = Tokens.lookAhead();
   }
@@ -115,10 +170,9 @@ NamespaceDecl * Parser::parseNamespaceDecl() {
 
   if (const auto T = Tokens.conditionalConsume(tok::LBrace); T != std::nullopt) {
     // Parse the declarations within
-    constexpr ParserFrame NamespaceParserFrame {
-      .AllowsNamespace = true,
-      .AllowsTypeDecl = true,
-      .AllowsChannel = true
+    static const ParserFrame NamespaceParserFrame {
+      .ParentContext = &NewNamespace,
+      .ContextKind = NamespaceGrammar
     };
 
     const ScopedParserFrame F(this, NamespaceParserFrame);
@@ -162,21 +216,76 @@ TraitDecl* Parser::parseTraitDecl() {
   assert(Tok.Kind == tok::KwTrait);
   const SourceLocation StartLoc = Tok.SourceRange.getStartLoc();
 
+  auto ParseBody = [this, StartLoc](const size_t StartingDepth = 0) {
+    // temporary cop out
+    if (!skipUntilEnclosingBrace(StartingDepth)) {
+      Diag.report(diag::SyntaxError, StartLoc) << "trait is missing enclosing '}'";
+    }
+  };
+
+  auto AttemptRecovery = [this, ParseBody]() {
+    size_t Distance = 0;
+    while (true) {
+      const Token T = Tokens.lookAhead(Distance++);
+      if (T.Kind == tok::LBrace) {
+        // First throw away all the tokens we had to skip. todo turn this into useful diagnostic information
+        Tokens.consumeN(Distance);
+
+        // We can continue parsing the trait body from here
+        ParseBody();
+        return;
+      }
+
+      if (startsDeclaration(T.Kind)) {
+        Tokens.consumeN(Distance - 1);
+        if (acceptsDeclaration(TraitGrammar, T.Kind)) {
+          ParseBody();
+          return;
+        }
+        // we're done parsing this trait, we leave things here for the parent scope to pick up
+        return;
+      }
+
+      if (T.Kind == tok::RBrace) {
+        Tokens.consumeN(Distance-1);
+        return;
+      }
+
+      if (T.Kind == tok::EndOfFile) {
+        Tokens.consumeN(Distance - 1);
+        return;
+      }
+    }
+  };
+
   Tok = Tokens.lookAhead();
-  if (Tok.Kind != tok::Identifier) {
-    // todo emit diag. Should we also insert some other identifier and continue parsing here, or how should we recover?
+  Identifier Ident;
+  const bool IsMissingIdentifier = Tok.Kind != tok::Identifier;
+  if (IsMissingIdentifier) {
+    Ident = Identifiers.get("**error**");
+    Diag.report(diag::SyntaxError, Tok.SourceRange.getStartLoc()) << "expected an identifier to name the trait with";
   }
   else {
+    Ident = Tok.Ident;
     Tokens.consume();
   }
 
-  const Identifier Ident = Tok.Ident;
-
-  if (const auto T = Tokens.conditionalConsume(tok::LBrace); T != std::nullopt) {
-    skipUntilEnclosingBrace(); // Just a temporary workaround so we can parse through the file
+  auto& Trait = Context.emplace<TraitDecl>(StartLoc, Ident);
+  if (IsMissingIdentifier) {
+    AttemptRecovery();
+    return &Trait;
   }
 
-  return &Context.emplace<TraitDecl>(StartLoc, Ident);
+  // If we're here, then the grammar was correct up to this point
+  if (const auto T = Tokens.conditionalConsume(tok::LBrace); T != std::nullopt) {
+    ParseBody();
+  }
+  else {
+    Diag.report(diag::SyntaxError, Tokens.lookAhead().SourceRange.getStartLoc()) << "expected an opening '{' while parsing trait";
+    AttemptRecovery();
+  }
+
+  return &Trait;
 }
 
 ImplDecl *Parser::parseImplDecl() {
@@ -275,22 +384,22 @@ void Parser::skipUntil(const tok::TokenKind K) {
   }
 }
 
-bool Parser::skipUntilEnclosingBrace() {
+bool Parser::skipUntilEnclosingBrace(size_t Depth) {
   auto AheadK = Tokens.lookAhead().Kind;
-  size_t Counter = 0;
+
   while (true) {
 
     if (AheadK == tok::LBrace) {
-      ++Counter;
+      ++Depth;
     }
     else if (AheadK == tok::RBrace) {
-      if (Counter == 0) {
+      if (Depth == 0) {
         // we're about to early out before we consume the token, so consume it now
         Tokens.consume();
         return true;
       }
 
-      --Counter;
+      --Depth;
     }
     else if (AheadK == tok::EndOfFile) {
       return false;
@@ -301,6 +410,52 @@ bool Parser::skipUntilEnclosingBrace() {
   }
 
   return false;
+}
+
+std::optional<size_t> Parser::distanceTo(const tok::TokenKind K) {
+  size_t Distance = 0;
+  auto AheadK = Tokens.lookAhead(Distance).Kind;
+  while (AheadK != K) {
+    if (AheadK == tok::EndOfFile)
+      return std::nullopt;
+
+    AheadK = Tokens.lookAhead(++Distance).Kind;
+  }
+
+  return Distance;
+}
+
+std::optional<size_t> Parser::distanceToEnclosingBrace() {
+  size_t Distance = 0;
+
+  auto AheadK = Tokens.lookAhead().Kind;
+  size_t Counter = 0;
+  while (true) {
+
+    if (AheadK == tok::LBrace)
+      ++Counter;
+    else if (AheadK == tok::RBrace) {
+      if (Counter == 0)
+        return Distance;
+      --Counter;
+    }
+    else if (AheadK == tok::EndOfFile)
+      return std::nullopt;
+
+    AheadK = Tokens.lookAhead(++Distance).Kind;
+  }
+}
+
+bool Parser::startsDeclaration(const tok::TokenKind K) const {
+  return tok::lookupDeclKeyword(K) != nullptr;
+}
+
+bool Parser::acceptsDeclaration(const tok::TokenKind K) const {
+  return lookupDeclNesting(getCurrentParseFrame().ContextKind, K) != nullptr;
+}
+
+bool Parser::acceptsDeclaration(const GrammarContextKind ContextK, const tok::TokenKind K) const {
+  return lookupDeclNesting(ContextK, K) != nullptr;
 }
 
 } // namespace gstrands

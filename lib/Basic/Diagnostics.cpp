@@ -14,6 +14,7 @@ DiagnosticBuilder::~DiagnosticBuilder() {
   Diag.Id = ID;
   Diag.Severity = Severity;
   Diag.Location = Location;
+  Diag.Message.assign(MessageBuff.begin(), MessageBuff.end());
 
   Engine->emitDiagnostic(Diag);
 }

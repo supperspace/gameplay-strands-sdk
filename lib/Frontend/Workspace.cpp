@@ -18,42 +18,59 @@ Workspace::~Workspace() = default;
 
 SourceSnapshot Workspace::fileOpened(const StringRef Path, const StringRef Contents, const int64_t Ver) {
   // The file should not exist in our file map yet.
-  assert(!OpenFileMap.contains(Path));
+  SmallString<256> Normalized;
+  sys::fs::real_path(Path, Normalized);
 
-  updateFile(Path, Contents, Ver);
+  assert(!OpenFileMap.contains(Normalized));
+
+  updateFile(Normalized, Contents, Ver).UriPath = Path;
   return assembleSourceSnapshot();
 }
 
 SourceSnapshot Workspace::fileChanged(const StringRef Path, const StringRef Contents, const int64_t Ver) {
-  assert(OpenFileMap.contains(Path));
+  SmallString<256> Normalized;
+  sys::fs::real_path(Path, Normalized);
 
-  updateFile(Path, Contents, Ver);
+  assert(OpenFileMap.contains(Normalized));
+
+  updateFile(Normalized, Contents, Ver).UriPath = Path;
   return assembleSourceSnapshot();
 }
 
 SourceSnapshot Workspace::fileSaved(const StringRef Path) {
-  assert(OpenFileMap.contains(Path));
+  SmallString<256> Normalized;
+  sys::fs::real_path(Path, Normalized);
+
+  assert(OpenFileMap.contains(Normalized));
   return assembleSourceSnapshot();
 }
 
 SourceSnapshot Workspace::fileClosed(const StringRef Path) {
-  assert(OpenFileMap.contains(Path));
-  OpenFileMap.erase(Path);
+  SmallString<256> Normalized;
+  sys::fs::real_path(Path, Normalized);
+
+
+  assert(OpenFileMap.contains(Normalized));
+  OpenFileMap.erase(Normalized);
   return assembleSourceSnapshot();
 }
 
 std::string Workspace::getDraftCopy(const StringRef Path) const {
+  SmallString<256> Normalized;
+  sys::fs::real_path(Path, Normalized);
+
   if (auto I = OpenFileMap.find(Path); I != OpenFileMap.end()) {
     return I->getValue().Content;
   }
   return {};
 }
 
-void Workspace::updateFile(const StringRef Path, const StringRef Contents, const int64_t Ver) {
-  auto &[Content, Timestamp, Version] = OpenFileMap[Path];
-  Content = Contents;
-  Timestamp = std::chrono::system_clock::now();
-  Version = Ver;
+SourceFileDraft & Workspace::updateFile(const StringRef Path, const StringRef Contents, const int64_t Ver) {
+  auto &Draft = OpenFileMap[Path];
+  Draft.Content = Contents;
+  Draft.Timestamp = std::chrono::system_clock::now();
+  Draft.Version = Ver;
+  return Draft;
 }
 
 SourceSnapshot Workspace::assembleSourceSnapshot() {
@@ -63,6 +80,7 @@ SourceSnapshot Workspace::assembleSourceSnapshot() {
   OverlayFS->pushOverlay(MemoryFS);
 
   std::set<Project> Projects;
+  StringMap<SourceDraftMetadata> DraftMetadataMap;
 
   for (const auto &[P, FS] : OpenFileMap) {
     std::string BufferName = formatv("{0}::{1}", FS.Version, P);
@@ -70,13 +88,19 @@ SourceSnapshot Workspace::assembleSourceSnapshot() {
     MemoryFS->addFile(P, sys::toTimeT(FS.Timestamp), std::move(Buff));
   }
 
-  for (const auto &Path : OpenFileMap.keys()) {
+  for (const auto &[Path, FS] : OpenFileMap) {
+    auto &DraftMetadata = DraftMetadataMap[Path];
+    DraftMetadata.Version = FS.Version;
+
     if (auto P = discoverSuitableProject(Path, *OverlayFS); !P.getError()) {
       Projects.insert(P.get());
+      DraftMetadata.ProjectScoped = true;
+    } else {
+      DraftMetadata.ProjectScoped = false;
     }
   }
 
-  return SourceSnapshot(OverlayFS, {Projects.begin(), Projects.end()});
+  return SourceSnapshot(OverlayFS, {Projects.begin(), Projects.end()}, std::move(DraftMetadataMap));
 }
 
 ErrorOr<Project> Workspace::discoverSuitableProject(const StringRef SrcPath, vfs::FileSystem &FS) {

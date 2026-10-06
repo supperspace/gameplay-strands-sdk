@@ -10,6 +10,7 @@ namespace gstrands {
 class ASTContext;
 
 struct SourceFileDraft {
+  std::string UriPath;
   std::string Content;
   std::chrono::sys_time<std::chrono::nanoseconds> Timestamp;
   int64_t Version = 0;
@@ -34,7 +35,7 @@ public:
   std::string getDraftCopy(llvm::StringRef Path) const;
 
 private:
-  void updateFile(llvm::StringRef Path, llvm::StringRef Contents, int64_t Ver);
+  SourceFileDraft &updateFile(llvm::StringRef Path, llvm::StringRef Contents, int64_t Ver);
   SourceSnapshot assembleSourceSnapshot();
   static llvm::ErrorOr<Project> discoverSuitableProject(llvm::StringRef SrcPath, llvm::vfs::FileSystem& FS);
 

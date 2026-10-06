@@ -9,9 +9,10 @@ public:
 
   void handleDiagnostic(const Diagnostic &Diag) override;
 
-  const llvm::ArrayRef<Diagnostic> getDiags() const {
+  llvm::ArrayRef<Diagnostic> getDiags() const {
     return Diags;
   }
+
   
 private:
   std::vector<Diagnostic> Diags;

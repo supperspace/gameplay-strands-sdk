@@ -30,7 +30,13 @@ public:
 
   using FileID = uint32_t;
 
-  llvm::Expected<SourceBufferView> getOrLoadBuffer(const llvm::StringRef SourceFile);
+  llvm::Expected<SourceBufferView> getOrLoadBuffer(llvm::StringRef SourceFile);
+
+  FileID getFileForLocation(SourceLocation L) const;
+  FileID getFileId(llvm::StringRef Path) const;
+
+  ExpandedSourceLocation expandSourceLocation(SourceLocation L) const;
+
 private:
   struct SourceInfo {
     SourceInfo(const SourceInfo&) = delete;
@@ -47,7 +53,11 @@ private:
     uint32_t StartOffset = 0;
     uint32_t EndOffset = 0;
     std::unique_ptr<llvm::MemoryBuffer> Buffer;
+
+    mutable std::vector<uint32_t> LazyCachedLineOffsets;
   };
+
+  void populateLineOffsets(FileID File) const;
 
   using SourceLocationRangeMap = llvm::IntervalMap<uint32_t, FileID>;
 

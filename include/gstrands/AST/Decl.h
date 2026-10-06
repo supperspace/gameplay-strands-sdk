@@ -92,11 +92,11 @@ protected:
   using NamedDecl::NamedDecl;
 };
 
-class FieldDecl : public ValueDecl {
+class PropertyDecl : public ValueDecl {
 public:
-  static bool classof(const Decl *D) { return D->getKind() == Field; }
+  static bool classof(const Decl *D) { return D->getKind() == Property; }
 
-  explicit FieldDecl(const SourceLocation L, const Identifier I) : ValueDecl(Field, L, I) {}
+  explicit PropertyDecl(const SourceLocation L, const Identifier I) : ValueDecl(Property, L, I) {}
 };
 
 class VarDecl : public ValueDecl {

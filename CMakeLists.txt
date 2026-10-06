@@ -51,8 +51,6 @@ endif ()
 get_property(GAMEPLAY_STRANDS_LIBRARIES GLOBAL
         PROPERTY GAMEPLAY_STRANDS_LIBRARIES)
 
-message("All Libraries: ${GAMEPLAY_STRANDS_LIBRARIES}")
-
 if (GAMEPLAYSTRANDS_ENABLE_INSTALL)
     include(cmake/GameplayStrandsInstall.cmake)
 

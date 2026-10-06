@@ -3,8 +3,10 @@
 #include "gstrands/Basic/SourceLocation.h"
 
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringTable.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include <cstdint>
 
@@ -55,6 +57,11 @@ public:
   DiagnosticBuilder(const DiagnosticBuilder&) = delete;
   DiagnosticBuilder& operator=(const DiagnosticBuilder&) = delete;
 
+  template <typename T>
+  friend llvm::raw_ostream &operator<<(DiagnosticBuilder &&DB, T&& O) {
+    return DB.MessageStream << std::forward<T>(O);
+  }
+
 private:
   explicit DiagnosticBuilder(DiagnosticsEngine &E, const diag::DiagnosticId I,
                              const diag::DiagnosticSeverity Sev,
@@ -65,6 +72,9 @@ private:
   diag::DiagnosticId ID;
   diag::DiagnosticSeverity Severity;
   SourceLocation Location;
+
+  llvm::SmallString<256> MessageBuff;
+  llvm::raw_svector_ostream MessageStream{MessageBuff};
 };
 
 class DiagnosticsEngine {

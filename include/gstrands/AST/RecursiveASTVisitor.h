@@ -117,7 +117,7 @@ DEF_TRAVERSE_DECL(ChannelDecl, {});
 DEF_TRAVERSE_DECL(TraitDecl, {});
 DEF_TRAVERSE_DECL(ComponentDecl, {});
 DEF_TRAVERSE_DECL(ImplDecl, {});
-DEF_TRAVERSE_DECL(FieldDecl, {});
+DEF_TRAVERSE_DECL(PropertyDecl, {});
 DEF_TRAVERSE_DECL(VarDecl, {});
 DEF_TRAVERSE_DECL(ParmVarDecl, {});
 

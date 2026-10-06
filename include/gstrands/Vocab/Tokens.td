@@ -8,10 +8,15 @@ class TokenKind<string spelling = ""> {
   TokenKind Kind = !cast<TokenKind>(NAME);
   bit IsKeyword = 0;
   bit IsTrivia = 0;
+  bit IsDeclStarter = 0;
 }
 
 class Keyword<string spelling> : TokenKind<spelling> {
   let IsKeyword = 1;
+}
+
+class DeclKeyword<string spelling> : Keyword<spelling> {
+  let IsDeclStarter = 1;
 }
 
 class FundamentalType<string spelling> : Keyword<spelling>;
@@ -53,20 +58,10 @@ def KwIf          : Keyword<"if">;
 def KwElse        : Keyword<"else">;
 def KwWhile       : Keyword<"while">;
 def KwLet         : Keyword<"let">;
-def KwExtern      : Keyword<"extern">;
-def KwStruct      : Keyword<"struct">;
-def KwTrait       : Keyword<"trait">;
-def KwMutation    : Keyword<"mutation">;
-def KwFunction    : Keyword<"function">;
 def KwCollector   : Keyword<"collector">;
 def KwDerive      : Keyword<"derive">;
 def KwEvent       : Keyword<"event">;
-def KwDelegate    : Keyword<"delegate">;
 def KwExec        : Keyword<"exec">;
-def KwNamespace   : Keyword<"namespace">;
-def KwComponent   : Keyword<"component">;
-def KwLink        : Keyword<"link">;
-def KwImpl        : Keyword<"impl">;
 def KwRollback    : Keyword<"rollback">;
 def KwWith        : Keyword<"with">;
 def KwUsing       : Keyword<"using">;
@@ -84,13 +79,22 @@ def KwCommit      : Keyword<"commit">;
 def KwEmit        : Keyword<"emit">;
 def KwWrites      : Keyword<"writes">;
 def KwControls    : Keyword<"controls">;
-def KwProgram     : Keyword<"program">;
 def KwWindow      : Keyword<"window">;
 def KwPort        : Keyword<"port">;
 def KwBind        : Keyword<"bind">;
 def KwTo          : Keyword<"to">;
 def KwOn          : Keyword<"on">;
-def KwChannel     : Keyword<"channel">;
+
+def KwStruct      : DeclKeyword<"struct">;
+def KwTrait       : DeclKeyword<"trait">;
+def KwDelegate    : DeclKeyword<"delegate">;
+def KwNamespace   : DeclKeyword<"namespace">;
+def KwComponent   : DeclKeyword<"component">;
+def KwLink        : DeclKeyword<"link">;
+def KwImpl        : DeclKeyword<"impl">;
+def KwChannel     : DeclKeyword<"channel">;
+def KwDef         : DeclKeyword<"def">;
+def KwProperty    : DeclKeyword<"property">;
 
 // Member access.
 def Period : Punctuator<".">;
@@ -173,4 +177,16 @@ def KeywordTable: GenericTable {
     let Fields = ["Kind"];
 
     string TypeOf_Kind = "TokenKind";
+}
+
+def DeclKeywordTable: GenericTable {
+  let FilterClass = "DeclKeyword";
+  let CppTypeName = "KeywordInfo";
+
+  let Fields = ["Kind"];
+
+  string TypeOf_Kind = "TokenKind";
+
+  let PrimaryKey = ["Kind"];
+  let PrimaryKeyName = "lookupDeclKeyword";
 }
