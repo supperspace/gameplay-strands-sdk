@@ -1,4 +1,4 @@
-trait Stren|gth {
+trait Strength {
   property Value: int;
 }
 

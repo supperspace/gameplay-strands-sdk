@@ -29,7 +29,6 @@ Token Lexer::lex() {
       skipUntilIncluding("*/");
       HadToSkipComment = true;
     }
-
   } while (HadToSkipComment);
 
   // Now we're ready to look for some actual tokens
@@ -38,9 +37,10 @@ Token Lexer::lex() {
     return Token(tok::EndOfFile, {StartLoc, StartLoc});
   }
 
-  auto C = peekNextChar();
+  const auto C = peekNextChar();
 
   auto MakeToken = [this, StartLoc](const tok::TokenKind K) -> Token {
+    digestToken(K);
     return Token{K, {StartLoc, getCurrentSourceLoc()}};
   };
 
@@ -58,14 +58,11 @@ Token Lexer::lex() {
     return MakeTokenAdvance(tok::Exclaim);
 
   case '\"':
-    llvm_unreachable("Language has no string literals _yet_");
-    break;
+    return lexStringLiteral();
   case '#':
-    llvm_unreachable("Language has no tokens containing '#'");
-    break;
+    return MakeTokenAdvance(tok::Unknown);
   case '$':
-    llvm_unreachable("Language has no tokens containing '$'");
-    break;
+    return MakeTokenAdvance(tok::Unknown);
   case '%':
     if (conditionalAdvance("%="))
       return MakeToken(tok::PercentEqual);
@@ -78,8 +75,7 @@ Token Lexer::lex() {
     return MakeTokenAdvance(tok::Amp);
 
   case '\'':
-    llvm_unreachable("Language has no character literal tokens");
-    break;
+    return lexCharacterLiteral();
   case '(':
     return MakeTokenAdvance(tok::LParen);
   case ')':
@@ -159,8 +155,7 @@ Token Lexer::lex() {
     return MakeTokenAdvance(tok::Greater);
 
   case '?':
-    llvm_unreachable("Language has no tokens containing '?'");
-    break;
+    return MakeTokenAdvance(tok::Unknown);
   case '@':
     return MakeTokenAdvance(tok::At);
 
@@ -199,8 +194,7 @@ Token Lexer::lex() {
     return MakeTokenAdvance(tok::LSquare);
 
   case '\\':
-    llvm_unreachable("Language has no tokens containing '\\'");
-    break;
+    return MakeTokenAdvance(tok::Unknown);
   case ']':
     return MakeTokenAdvance(tok::RSquare);
   case '^':
@@ -210,8 +204,7 @@ Token Lexer::lex() {
   case '_':
     return lexIdentifier();
   case '`':
-    llvm_unreachable("Language has no tokens containing '`'");
-    break;
+    return MakeTokenAdvance(tok::Unknown);
 
     // clang-format off
   case 'a': [[fallthrough]];
@@ -256,7 +249,7 @@ Token Lexer::lex() {
   case '~':
     return MakeTokenAdvance(tok::Tilde);
   default:
-    llvm_unreachable("Invalid character");
+    return MakeTokenAdvance(tok::Invalid);
   }
 
   return {};
@@ -322,6 +315,8 @@ Token Lexer::lexIdentifier() {
 
   SourceLocation EndLoc = getCurrentSourceLoc();
 
+  digestToken(tok::Identifier);
+  Blake3.update(Spelling);
   auto Ident = IdentTable.get(Spelling);
   return {Ident, {StartLoc, EndLoc}};
 }
@@ -427,7 +422,50 @@ std::optional<Token> Lexer::lexNumericLiteral() {
   T.Spelling = Spelling;
   T.SourceRange = { StartLoc, getCurrentSourceLoc() };
 
+  digestToken(T.Kind);
+  Blake3.update(Spelling);
   return T;
+}
+
+Token Lexer::lexStringLiteral() {
+  return lexDelimitedLiteral('\"', tok::StringLiteral);
+}
+
+Token Lexer::lexCharacterLiteral() {
+  return lexDelimitedLiteral('\'', tok::CharLiteral);
+}
+
+Token Lexer::lexDelimitedLiteral(const char Delimiter, const tok::TokenKind TK) {
+  const SourceLocation StartLoc = getCurrentSourceLoc();
+  assert(Remaining.starts_with(Delimiter));
+
+  // Drop the Delimiter
+  Remaining = Remaining.drop_front(1);
+
+
+  const auto Value = Remaining.take_while(
+    [Delimiter](auto C) -> bool { return C != Delimiter && C != '\n' && C != '\r'; });
+
+  Remaining = Remaining.drop_front(Value.size());
+  Token T;
+  T.Spelling = Value;
+  T.Kind = TK;
+
+  if (Remaining.starts_with(Delimiter))
+    Remaining = Remaining.drop_front(1);
+  else
+    T.IsMalformed = true;
+
+  T.SourceRange = {StartLoc, getCurrentSourceLoc()};
+  digestToken(TK);
+  Blake3.update(T.Spelling);
+
+  return T;
+}
+
+void Lexer::digestToken(const tok::TokenKind TK) {
+  const llvm::ArrayRef KView(reinterpret_cast<const uint8_t*>(&TK), sizeof(TK));
+  Blake3.update(KView);
 }
 
 } // namespace gstrands

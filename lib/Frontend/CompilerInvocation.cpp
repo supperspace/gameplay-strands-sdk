@@ -8,6 +8,7 @@
 #include "gstrands/Parse/Parser.h"
 #include "gstrands/Project/Project.h"
 
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/VirtualFileSystem.h"
@@ -64,6 +65,10 @@ CompilationResult CompilerInvocation::compile() const {
       Parser Parse{Lex, *DiagEngine, *Result.ASTs.back(), Identifiers};
 
       Parse.parse();
+      std::array<uint8_t, 8> LexBlake3;
+      Lex.takeFinalBlake3(LexBlake3);
+
+      llvm::errs() << "Finished parsing '" << SourcePath << "'. Blake3: '" << llvm::toHex(LexBlake3) << "'\n";
     }
   }
 

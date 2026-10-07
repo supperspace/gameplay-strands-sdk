@@ -3,6 +3,8 @@
 #include "gstrands/Basic/SourceManager.h"
 #include "gstrands/Lex/Token.h"
 
+#include "llvm/Support/BLAKE3.h"
+
 namespace gstrands {
 
 class IdentifierTable;
@@ -10,8 +12,13 @@ class IdentifierTable;
 class Lexer {
 
 public:
-  Lexer(const SourceBufferView InSourceBufferView, IdentifierTable& InIdentifierTable);
+  Lexer(SourceBufferView InSourceBufferView, IdentifierTable& InIdentifierTable);
   Token lex();
+
+  template <size_t N>
+  void takeFinalBlake3(std::array<uint8_t, N>& Out) {
+    Blake3.final(Out);
+  }
 
 private:
   SourceBufferView SourceBuffView;
@@ -35,6 +42,13 @@ private:
 
   Token lexIdentifier();
   std::optional<Token> lexNumericLiteral();
+  Token lexStringLiteral();
+  Token lexCharacterLiteral();
+  Token lexDelimitedLiteral(char Delimiter, tok::TokenKind TK);
+
+  void digestToken(tok::TokenKind TK);
+
+  llvm::BLAKE3 Blake3;
 };
 
 } // namespace gstrands

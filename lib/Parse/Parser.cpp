@@ -62,7 +62,7 @@ std::optional<Token> TokenStream::conditionalConsume(tok::TokenKind K) {
 }
 
 void Parser::parse() {
-  static const ParserFrame RootFrame {
+  const ParserFrame RootFrame {
     .ParentContext = Context.getRootDecl(),
     .ContextKind = RootGrammar
   };
@@ -170,7 +170,7 @@ NamespaceDecl * Parser::parseNamespaceDecl() {
 
   if (const auto T = Tokens.conditionalConsume(tok::LBrace); T != std::nullopt) {
     // Parse the declarations within
-    static const ParserFrame NamespaceParserFrame {
+    const ParserFrame NamespaceParserFrame {
       .ParentContext = &NewNamespace,
       .ContextKind = NamespaceGrammar
     };

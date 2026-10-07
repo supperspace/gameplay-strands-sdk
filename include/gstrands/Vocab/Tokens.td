@@ -41,6 +41,8 @@ def Identifier      : TokenKind;
 def IntegerLiteral  : TokenKind;
 def RealLiteral     : TokenKind;
 def DurationLiteral : TokenKind;
+def StringLiteral   : TokenKind;
+def CharLiteral     : TokenKind;
 
 // Fundamental types.
 def KwBool     : FundamentalType<"bool">;
